@@ -9,3 +9,5 @@ reagent and noggin-server are both open-source software but are offered under di
 When used with reagent, noggin-server expects **not** to run behind a reverse proxy. reagent seeks to provide detailed debugging tools in its execution history view, allowing users to see specific details of their requests (like where the request came from, or whether there were TLS errors in the request).
 
 noggin-server will still work behind a reverse proxy, but some of these debugging tools will not function correctly when the server is used with reagent.
+
+In addition, keep in mind that noggin-server will stream text responses when it can; if your reverse-proxy is not configured to pass this incomplete stream through to the user, you won't get this functionality.
