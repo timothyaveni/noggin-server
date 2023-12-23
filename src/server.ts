@@ -6,8 +6,9 @@ import { createRequestParameters } from './createRequestParameters.js';
 import { parseModelInputs } from './parseModelInputs.js';
 import { evaluateParamsInModelInputs } from './evaluateParams.js';
 
+import modelProviderIndex from './models/index.js';
+
 import dotenv from 'dotenv';
-import { streamResponse } from './models/gpt-4-1106-preview.js';
 dotenv.config();
 
 export const prisma = new PrismaClient();
@@ -72,22 +73,34 @@ app.get('/:noggin', async (req, res) => {
     },
   });
 
-  const editorSchema = await prisma.aIModel
+  if (!nogginRevision) {
+    return res.status(404).send('Not found');
+  }
+
+  const { editorSchema, modelName, revision, modelProviderName } = await prisma.aIModel
     .findUniqueOrThrow({
       where: {
         id: noggin.aiModelId,
       },
       select: {
+        name: true,
         editorSchema: true,
+        revision: true,
+        modelProvider: {
+          select: {
+            name: true,
+          },
+        },
       },
     })
     .then((aiModel) => {
-      return JSON.parse(aiModel?.editorSchema);
+      return {
+        editorSchema: JSON.parse(aiModel.editorSchema),
+        modelName: aiModel.name,
+        revision: aiModel.revision,
+        modelProviderName: aiModel.modelProvider.name,
+      };
     });
-
-  if (!nogginRevision) {
-    return res.status(404).send('Not found');
-  }
 
   const yDoc = new Y.Doc();
   deserializeYDoc(nogginRevision.content, yDoc);
@@ -102,7 +115,7 @@ app.get('/:noggin', async (req, res) => {
   const documentParameters = yDoc.get('documentParameters', Y.Map).toJSON();
 
   const requestParameters = createRequestParameters(req, documentParameters);
-  // // TODO allow overrides too, i guess
+  // TODO allow overrides too, i guess
 
   const evaluatedModelParams = evaluateParamsInModelInputs(
     parsedModelInputs,
@@ -111,13 +124,9 @@ app.get('/:noggin', async (req, res) => {
     requestParameters,
   );
 
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Transfer-Encoding', 'chunked');
-  res.setHeader('Keep-Alive', 'timeout=20, max=1000');
-
-
   // todo maybe a timeout on this side before we call into the model code?
   console.log(evaluatedModelParams);
+  const { streamResponse } = modelProviderIndex(modelProviderName)(modelName)
   streamResponse(evaluatedModelParams, res);
 });
 

@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { StandardChat } from '../evaluateParams';
+import { StandardChat } from '../../evaluateParams';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources';
 
@@ -13,9 +13,14 @@ type ModelParams = {
 type OpenAIChat = ChatCompletionMessageParam[];
 
 export const streamResponse = async (
-  evaluatedModelParams: any,
+  evaluatedModelParams: ModelParams,
   response: Response,
 ) => {
+  // TODO: probably extract these into a function
+  response.setHeader('Content-Type', 'text/html; charset=utf-8');
+  response.setHeader('Transfer-Encoding', 'chunked');
+  response.setHeader('Keep-Alive', 'timeout=20, max=1000');
+
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY as string }); // TODO very temporary
 
   const messages: OpenAIChat = [];
