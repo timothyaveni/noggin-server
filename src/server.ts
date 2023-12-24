@@ -114,7 +114,7 @@ app.get('/:noggin', async (req, res) => {
 
   const documentParameters = yDoc.get('documentParameters', Y.Map).toJSON();
 
-  const requestParameters = createRequestParameters(req, documentParameters);
+  const requestParameters = await createRequestParameters(req, documentParameters);
   // TODO allow overrides too, i guess
 
   const evaluatedModelParams = evaluateParamsInModelInputs(

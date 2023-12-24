@@ -10,7 +10,7 @@ export const parseModelInputs = (modelInputsMap: Y.Map, editorSchema: any) => {
     const input = editorSchema.allInputs[inputKey];
     switch (input.type) {
       case 'chat-text-user-images-with-parameters':
-        throw new Error('TODO');
+        // throw new Error('TODO');
       case 'chat-text-with-parameters':
         parsedInputs[inputKey] = slateChatToStandardChat(
           yTextToSlateElement(modelInputsMap.get(inputKey, Y.XmlText)),

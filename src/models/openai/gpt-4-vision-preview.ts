@@ -40,9 +40,12 @@ export const streamResponse = async (
     } as ChatCompletionMessageParam); // something is going weird with the TS overload here
   }
 
+  console.log(messages);
+
   const stream = await openai.chat.completions.create({
     messages,
-    model: 'gpt-4-1106-preview',
+    model: 'gpt-4-vision-preview',
+    max_tokens: 2048,
     stream: true,
   });
 

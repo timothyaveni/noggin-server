@@ -1,30 +1,61 @@
 import { Request } from 'express';
+import { emptyPNGUrl, imageUrlToBase64 } from './imageUtils.js';
 
-type DocumentParameter = {
+// TODO: synced from store.tsx -- probably extract this to shared code
+type DocumentBaseParameter = {
   name: string;
-  // TODO: 'type' -- we probably want images to be parameters as well
-  maxLength: string; // TODO: refactor this into a separate 'options' payload
-  defaultValue: string;
 };
+
+export interface DocumentTextParameter extends DocumentBaseParameter {
+  type: 'text';
+  maxLength: number;
+  defaultValue: string;
+}
+
+export interface DocumentImageParameter extends DocumentBaseParameter {
+  type: 'image';
+  openAI_detail: 'low' | 'high' | 'auto'; // openai-centric for now. also maybe in the future we do our own scaling in the shim?
+}
+
+export type DocumentParameter = DocumentTextParameter | DocumentImageParameter;
+type _DPTypeCheck = DocumentParameter['type'];
 
 type DocumentParameters = {
   [key: string]: DocumentParameter;
 };
 
-export const createRequestParameters = (
+export type RequestParameters = {
+  [key: string]: string;
+};
+
+export const createRequestParameters = async (
   req: Request,
   documentParameters: DocumentParameters,
-) => {
-  const parameters: any = {};
+): Promise<RequestParameters> => {
+  const parameters: RequestParameters = {};
 
   // todo truncation etc
   for (const parameterKey of Object.keys(documentParameters)) {
     const parameter = documentParameters[parameterKey]; // todo: dupe params etc
-    if (req.query[parameter.name]) {
-      parameters[parameterKey] = req.query[parameter.name];
-    } else {
-      parameters[parameterKey] =
-        documentParameters[parameterKey].defaultValue || '';
+    const queryValue = req.query[parameter.name];
+    switch (parameter.type) {
+      case 'text':
+        if (queryValue) {
+          parameters[parameterKey] = queryValue.toString();
+        } else {
+          parameters[parameterKey] = parameter.defaultValue || '';
+        }
+        break;
+      case 'image':
+        if (queryValue) {
+          parameters[parameterKey] = await imageUrlToBase64(
+            queryValue.toString(),
+          );
+        } else {
+          console.warn('no image provided for parameter', parameterKey);
+          parameters[parameterKey] = emptyPNGUrl();
+        }
+        break;
     }
   }
 

@@ -38,9 +38,22 @@ export const evaluateParamsInModelInputs = (
   return newModelInputs;
 };
 
+export type ContentChunk =
+  | {
+      type: 'text';
+      text: string;
+    }
+  | {
+      type: 'image_url';
+      image_url: {
+        url: string;
+        openAI_detail: 'low' | 'high' | 'auto';
+      };
+    };
+
 type ChatTurn = {
   speaker: 'user' | 'assistant';
-  text: string;
+  content: ContentChunk[];
 };
 export type StandardChat = ChatTurn[];
 
@@ -52,27 +65,50 @@ export const evaluateParamsInChatText = (
   const newChatText: StandardChat = [];
 
   for (const turn of chatText) {
-    const newTurn = {
+    const contentChunks: ContentChunk[] = [];
+    
+    const newTurn: ChatTurn = {
       speaker: turn.speaker,
-      text: '',
+      content: contentChunks,
     };
-
-    // console.log('t', turn)
 
     for (const chunk of turn.text) {
       switch (chunk.type) {
         case 'text':
-          newTurn.text += chunk.text;
+          contentChunks.push({ type: 'text', text: chunk.text });
           break;
         case 'parameter':
-          newTurn.text +=
-            parameters[chunk.parameterId] ||
-            documentParameters[chunk.parameterId].defaultValue;
+          const parameterType = documentParameters[chunk.parameterId].type;
+
+          switch (parameterType) {
+            case 'text':
+              contentChunks.push({
+                type: 'text',
+                text:
+                  parameters[chunk.parameterId] ||
+                  documentParameters[chunk.parameterId].defaultValue,
+              });
+              break;
+            case 'image':
+              contentChunks.push({
+                type: 'image_url',
+                image_url: {
+                  url: parameters[chunk.parameterId] || '', // TODO: not sure i'm digging the return type of 'parameters'. also, the empty string should trigger a warning
+                  openAI_detail: 'high', // yeah that's not gonna work
+                },
+              });
+              break;
+            default:
+              throw new Error('Unknown parameter type ' + parameterType);
+          }
           break;
+        case 'inline-image':
+          throw new Error('Not implemented'); // TODO
         default:
           throw new Error('Unknown chunk type ' + chunk.type);
       }
     }
+
     newChatText.push(newTurn);
   }
 
