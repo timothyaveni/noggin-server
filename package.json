@@ -5,10 +5,10 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "dev": "tsc-watch --onSuccess \"node dist/server.js\""
+    "dev": "tsc-watch --preserveWatchOutput --onSuccess \"node dist/server.js\""
   },
   "prisma": {
-    "schema": "../prisma/schema.prisma"
+    "schema": "/app/prisma/schema.prisma"
   },
   "author": "Timothy J. Aveni",
   "license": "Apache-2.0",

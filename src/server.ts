@@ -55,9 +55,9 @@ app.get('/:noggin', async (req, res) => {
     return res.status(403).send('Forbidden');
   }
 
-  // if (nogginApiKey.nogginId !== noggin.id) {
-  //   return res.status(403).send('Forbidden');
-  // }
+  if (nogginApiKey.nogginId !== noggin.id) {
+    return res.status(403).send('Forbidden');
+  }
 
   // TODO: not the best way to get the latest revision
   const nogginRevision = await prisma.nogginRevision.findFirst({
