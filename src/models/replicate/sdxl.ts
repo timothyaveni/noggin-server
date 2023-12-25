@@ -1,20 +1,21 @@
-import { Response } from 'express';
-import Replicate from 'replicate';
 import axios from 'axios';
+import Replicate from 'replicate';
+import { StreamModelResponse } from '..';
 
 type ModelParams = {
   prompt: string;
 };
 
-export const streamResponse = async (
+export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
-  response: Response,
+  { response, log },
 ) => {
   const replicate = new Replicate({
     auth: process.env.REPLICATE_API_TOKEN,
   });
 
-  const model = 'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b';
+  const model =
+    'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b';
   const input = {
     prompt: evaluatedModelParams.prompt,
     width: 512,

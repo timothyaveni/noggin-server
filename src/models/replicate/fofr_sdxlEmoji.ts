@@ -1,20 +1,21 @@
-import { Response } from 'express';
-import Replicate from 'replicate';
 import axios from 'axios';
+import Replicate from 'replicate';
+import { StreamModelResponse } from '..';
 
 type ModelParams = {
   prompt: string;
 };
 
-export const streamResponse = async (
+export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
-  response: Response,
+  { response, log },
 ) => {
   const replicate = new Replicate({
     auth: process.env.REPLICATE_API_TOKEN,
   });
 
-  const model = 'fofr/sdxl-emoji:dee76b5afde21b0f01ed7925f0665b7e879c50ee718c5f78a9d38e04d523cc5e';
+  const model =
+    'fofr/sdxl-emoji:dee76b5afde21b0f01ed7925f0665b7e879c50ee718c5f78a9d38e04d523cc5e';
   const input = {
     prompt: evaluatedModelParams.prompt,
     width: 1024,

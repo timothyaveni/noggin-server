@@ -1,7 +1,7 @@
-import { Response } from 'express';
-import { StandardChat } from '../../evaluateParams';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources';
+import { StreamModelResponse } from '..';
+import { StandardChat } from '../../evaluateParams';
 import { createOpenAIMultimodalContent } from './createOpenAIMultimodalContent.js';
 
 type ModelParams = {
@@ -13,9 +13,9 @@ type ModelParams = {
 
 type OpenAIChat = ChatCompletionMessageParam[];
 
-export const streamResponse = async (
+export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
-  response: Response,
+  { response, log },
 ) => {
   // TODO: probably extract these into a function
   response.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -46,9 +46,45 @@ export const streamResponse = async (
     stream: true,
   });
 
+  let output = '';
+
   for await (const chunk of stream) {
-    response.write(chunk.choices[0]?.delta?.content || '');
+    await log({
+      level: 'debug',
+      stage: 'run_model',
+      message: {
+        type: 'model_chunk',
+        text: 'Model chunk',
+        chunk,
+      },
+    });
+
+    const partial = chunk.choices[0]?.delta?.content;
+
+    if (partial) {
+      await log({
+        level: 'info',
+        stage: 'run_model',
+        message: {
+          type: 'model_partial_output',
+          text: 'Model partial output',
+          output: partial,
+        },
+      });
+      output += partial;
+      response.write(partial);
+    }
   }
+
+  await log({
+    level: 'info',
+    stage: 'run_model',
+    message: {
+      type: 'model_full_output',
+      text: 'Model full output',
+      output,
+    },
+  });
 
   response.end();
 };

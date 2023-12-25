@@ -1,12 +1,17 @@
+import {
+  NogginRunLogEntryStage,
+  NogginRunLogLevel,
+  PrismaClient,
+} from '@prisma/client';
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
 import * as Y from 'yjs';
-import { yTextToSlateElement } from '@slate-yjs/core';
 import { createRequestParameters } from './createRequestParameters.js';
-import { parseModelInputs } from './parseModelInputs.js';
 import { evaluateParamsInModelInputs } from './evaluateParams.js';
+import { parseModelInputs } from './parseModelInputs.js';
 
 import modelProviderIndex from './models/index.js';
+
+import { v4 as uuid } from 'uuid';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -21,6 +26,28 @@ const deserializeYDoc = (serialized: Buffer, yDoc: Y.Doc) => {
   return yDoc;
 };
 
+export type LogArgs = {
+  level: NogginRunLogLevel;
+  stage: NogginRunLogEntryStage;
+  message: any;
+  privateData?: any;
+};
+
+const logForRun = (runId: number) => async (log: LogArgs) => {
+  return await prisma.nogginRunLogEntry.create({
+    data: {
+      runId,
+      entryTypeVersion: 1,
+      level: log.level,
+      stage: log.stage,
+      message: log.message,
+      privateData: log.privateData,
+    },
+  });
+};
+
+// TODO: create a 'failed' runresult when we die, especially before calling the model
+
 app.get('/:noggin', async (req, res) => {
   const noggin = await prisma.noggin.findUnique({
     where: {
@@ -34,29 +61,6 @@ app.get('/:noggin', async (req, res) => {
 
   if (!noggin) {
     return res.status(404).send('Not found');
-  }
-
-  const key = req.query.key?.toString();
-
-  if (!key) {
-    return res.status(400).send('Bad request');
-  }
-
-  const nogginApiKey = await prisma.nogginAPIKey.findUnique({
-    where: {
-      key,
-    },
-    select: {
-      nogginId: true,
-    },
-  });
-
-  if (!nogginApiKey) {
-    return res.status(403).send('Forbidden');
-  }
-
-  if (nogginApiKey.nogginId !== noggin.id) {
-    return res.status(403).send('Forbidden');
   }
 
   // TODO: not the best way to get the latest revision
@@ -77,30 +81,117 @@ app.get('/:noggin', async (req, res) => {
     return res.status(404).send('Not found');
   }
 
-  const { editorSchema, modelName, revision, modelProviderName } = await prisma.aIModel
-    .findUniqueOrThrow({
-      where: {
-        id: noggin.aiModelId,
+  const run = await prisma.nogginRun.create({
+    data: {
+      uuid: uuid(),
+      nogginRevisionId: nogginRevision.id,
+    },
+  });
+
+  res.setHeader('X-Reagent-Noggin-Run-Id', run.uuid);
+
+  const log = logForRun(run.id);
+
+  const key = req.query.key?.toString();
+
+  if (!key) {
+    await log({
+      level: 'error',
+      stage: 'authenticate',
+      message: {
+        type: 'key_missing',
+        text: 'No API key was found in the HTTP request made to the noggin. All noggin uses must be authenticated.',
       },
-      select: {
-        name: true,
-        editorSchema: true,
-        revision: true,
-        modelProvider: {
-          select: {
-            name: true,
+    });
+    return res.status(400).send('Bad request');
+  }
+
+  await log({
+    level: 'info',
+    stage: 'authenticate',
+    message: {
+      type: 'key_received',
+      text: `Attempting to authenticate with key ${key}`,
+    },
+  });
+
+  const nogginApiKey = await prisma.nogginAPIKey.findUnique({
+    where: {
+      key,
+    },
+    select: {
+      nogginId: true,
+    },
+  });
+
+  // if (!nogginApiKey) {
+  //   await log({
+  //     level: 'error',
+  //     stage: 'authenticate',
+  //     message: {
+  //       type: 'key_invalid',
+  //       text: 'The API key provided was not valid for this noggin.',
+  //     },
+  //     privateData: {
+  //       reason: 'This key does not exist.',
+  //     },
+  //   });
+  //   return res.status(403).send('Forbidden');
+  // }
+
+  // if (nogginApiKey.nogginId !== noggin.id) {
+  //   await log({
+  //     level: 'error',
+  //     stage: 'authenticate',
+  //     message: {
+  //       type: 'key_invalid',
+  //       text: 'The API key provided was not valid for this noggin.',
+  //     },
+  //     privateData: {
+  //       reason: 'This key exists but is for a different noggin.',
+  //       otherNogginId: nogginApiKey.nogginId,
+  //     },
+  //   });
+  //   return res.status(403).send('Forbidden');
+  // }
+
+  const { editorSchema, modelName, revision, modelProviderName } =
+    await prisma.aIModel
+      .findUniqueOrThrow({
+        where: {
+          id: noggin.aiModelId,
+        },
+        select: {
+          name: true,
+          editorSchema: true,
+          revision: true,
+          modelProvider: {
+            select: {
+              name: true,
+            },
           },
         },
-      },
-    })
-    .then((aiModel) => {
-      return {
-        editorSchema: JSON.parse(aiModel.editorSchema),
-        modelName: aiModel.name,
-        revision: aiModel.revision,
-        modelProviderName: aiModel.modelProvider.name,
-      };
-    });
+      })
+      .then((aiModel) => {
+        return {
+          editorSchema: aiModel.editorSchema,
+          modelName: aiModel.name,
+          revision: aiModel.revision,
+          modelProviderName: aiModel.modelProvider.name,
+        };
+      });
+
+  await log({
+    level: 'info',
+    stage: 'process_parameters',
+    message: {
+      type: 'model_info_loaded',
+      text: 'Model info loaded',
+      modelName,
+      revision,
+      modelProviderName,
+    },
+  });
 
   const yDoc = new Y.Doc();
   deserializeYDoc(nogginRevision.content, yDoc);
@@ -114,7 +205,10 @@ app.get('/:noggin', async (req, res) => {
 
   const documentParameters = yDoc.get('documentParameters', Y.Map).toJSON();
 
-  const requestParameters = await createRequestParameters(req, documentParameters);
+  const requestParameters = await createRequestParameters(
+    req,
+    documentParameters,
+  );
   // TODO allow overrides too, i guess
 
   const evaluatedModelParams = evaluateParamsInModelInputs(
@@ -126,8 +220,11 @@ app.get('/:noggin', async (req, res) => {
 
   // todo maybe a timeout on this side before we call into the model code?
   console.log(evaluatedModelParams);
-  const { streamResponse } = modelProviderIndex(modelProviderName)(modelName)
-  streamResponse(evaluatedModelParams, res);
+  const { streamResponse } = modelProviderIndex(modelProviderName)(modelName);
+  streamResponse(evaluatedModelParams, {
+    response: res,
+    log,
+  });
 });
 
 app.listen(2358, () => {

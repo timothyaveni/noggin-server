@@ -1,7 +1,7 @@
-import { Response } from 'express';
-import { StandardChat } from '../../evaluateParams';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources';
+import { StreamModelResponse } from '..';
+import { StandardChat } from '../../evaluateParams';
 import { createOpenAIMultimodalContent } from './createOpenAIMultimodalContent.js';
 
 type ModelParams = {
@@ -13,9 +13,9 @@ type ModelParams = {
 
 type OpenAIChat = ChatCompletionMessageParam[];
 
-export const streamResponse = async (
+export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
-  response: Response,
+  { response, log },
 ) => {
   // TODO: probably extract these into a function
   response.setHeader('Content-Type', 'text/html; charset=utf-8');

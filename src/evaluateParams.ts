@@ -66,7 +66,7 @@ export const evaluateParamsInChatText = (
 
   for (const turn of chatText) {
     const contentChunks: ContentChunk[] = [];
-    
+
     const newTurn: ChatTurn = {
       speaker: turn.speaker,
       content: contentChunks,

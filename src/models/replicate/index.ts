@@ -1,7 +1,8 @@
-import { streamResponse as streamResponse_sdxl } from './sdxl.js';
+import { ModelFunctions } from '../index.js';
 import { streamResponse as streamResponse_fofr_sdxlEmoji } from './fofr_sdxlEmoji.js';
+import { streamResponse as streamResponse_sdxl } from './sdxl.js';
 
-export default function replicateIndex(modelName: string) {
+export default function replicateIndex(modelName: string): ModelFunctions {
   switch (modelName) {
     case 'sdxl':
       return {
