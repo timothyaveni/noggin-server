@@ -4,6 +4,12 @@
 
 // type RunStreamReceiveType = 'output' | 'log';
 
+enum RunState {
+  NOT_OPEN,
+  OPEN,
+  CLOSED,
+}
+
 type RunStream = {
   // streamMimeType: RunStreamMimeType;
   appendText: (text: string, metadata: any) => any;
@@ -13,7 +19,6 @@ type RunStream = {
   // receiveTypes: RunStreamReceiveType[];
   lastSentOutputIndex: number;
   lastSentLogIndex: number;
-  closed: boolean;
 };
 
 // type StreamOutputChunk =
@@ -35,12 +40,17 @@ type StreamOutputChunk = {
   metadata: any;
 };
 
+// TODO these gonna leak memory, fix that
 const streamOutputContent: {
   [runId: number]: StreamOutputChunk[];
 } = {};
 
 const streamLogContent: {
   [runId: number]: any[];
+} = {};
+
+const runStreamStates: {
+  [runId: number]: RunState;
 } = {};
 
 const streams: {
@@ -63,7 +73,6 @@ export const registerStream = (
     // receiveTypes: streamOptions.receiveTypes,
     lastSentOutputIndex: -1,
     lastSentLogIndex: -1,
-    closed: false,
   };
 
   if (!streams[runId]) {
@@ -72,22 +81,20 @@ export const registerStream = (
 
   streams[runId].push(stream);
 
+  console.log({ streams });
+
   flushStreamOutput(runId, stream);
 };
 
 const flushStreamOutput = (runId: number, stream: RunStream) => {
-  // if (!stream.receiveTypes.includes('output')) {
-  //   return;
-  // }
+  if (runStreamStates[runId] !== RunState.OPEN) {
+    return;
+  }
 
   const chunks = streamOutputContent[runId] || [];
 
   for (let i = stream.lastSentOutputIndex + 1; i < chunks.length; i++) {
     const chunk = chunks[i];
-
-    if (stream.closed) {
-      break;
-    }
 
     stream.appendText(chunk.content, chunk.metadata);
 
@@ -96,18 +103,14 @@ const flushStreamOutput = (runId: number, stream: RunStream) => {
 };
 
 const flushStreamLog = (runId: number, stream: RunStream) => {
-  // if (!stream.receiveTypes.includes('log')) {
-  //   return;
-  // }
+  if (runStreamStates[runId] !== RunState.OPEN) {
+    return;
+  }
 
   const chunks = streamLogContent[runId] || [];
 
   for (let i = stream.lastSentLogIndex + 1; i < chunks.length; i++) {
     const chunk = chunks[i];
-
-    if (stream.closed) {
-      break;
-    }
 
     stream.addLogEvent(chunk);
 
@@ -123,6 +126,8 @@ export const closeRun = (runId: number) => {
   }
 
   flushAllStreamsForRun(runId);
+
+  runStreamStates[runId] = RunState.CLOSED;
 
   for (const stream of runStreams) {
     stream.terminateStream();
@@ -172,10 +177,9 @@ export const writeLogToRunStream = (runId: number, logEvent: any) => {
   flushAllStreamsForRun(runId);
 };
 
-export const setHeaderForRunStream = (
+export const openRunStream = (
   runId: number,
-  key: string,
-  value: string,
+  headers: Record<string, string>,
 ) => {
   const runStreams = streams[runId];
 
@@ -184,6 +188,12 @@ export const setHeaderForRunStream = (
   }
 
   for (const stream of runStreams) {
-    stream.setHeader(key, value);
+    for (const [key, value] of Object.entries(headers)) {
+      stream.setHeader(key, value);
+    }
   }
+
+  runStreamStates[runId] = RunState.OPEN;
+
+  flushAllStreamsForRun(runId);
 };

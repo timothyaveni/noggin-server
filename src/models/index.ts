@@ -1,5 +1,6 @@
 import openaiIndex from './openai/index.js';
 import replicateIndex from './replicate/index.js';
+import testIndex from './test/index.js';
 
 export type StreamModelResponse = (
   evaluatedModelParams: any,
@@ -26,6 +27,8 @@ export default function index(
       return openaiIndex;
     case 'replicate':
       return replicateIndex;
+    case 'test':
+      return testIndex;
     default:
       throw new Error(`Unknown model provider ${providerName}`);
   }

@@ -223,30 +223,25 @@ const handleRequest = async (req: Request, res: Response) => {
   // todo maybe a timeout on this side before we call into the model code?
   console.log(evaluatedModelParams);
 
-  const setResponseHeader =
-    intent === 'stream'
-      ? (key: string, value: string) => {
-          res.setHeader(key, value);
-        }
-      : () => {};
-  const writeToResponseStream =
-    intent === 'stream'
-      ? (chunk: any) => {
-          res.write(chunk);
-        }
-      : () => {};
-  const endResponse = intent === 'stream' ? () => res.end() : () => {};
-
   registerStream(run.id, {
-    appendText: (text) => {
-      res.write(text);
-    },
-    setHeader: (key, value) => {
-      res.setHeader(key, value);
-    },
-    terminateStream: () => {
-      res.end();
-    },
+    appendText:
+      intent === 'stream'
+        ? (text) => {
+            res.write(text);
+          }
+        : undefined,
+    setHeader:
+      intent === 'stream'
+        ? (key, value) => {
+            res.setHeader(key, value);
+          }
+        : undefined,
+    terminateStream:
+      intent === 'stream'
+        ? () => {
+            res.end();
+          }
+        : undefined,
   });
 
   const { streamResponse } = modelProviderIndex(modelProviderName)(modelName);

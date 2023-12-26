@@ -5,7 +5,7 @@ import { StandardChat } from '../../evaluateParams';
 import { logForRun } from '../../log.js';
 import {
   closeRun,
-  setHeaderForRunStream,
+  openRunStream,
   writeTextToRunStream,
 } from '../../runStreams.js';
 import { createOpenAIMultimodalContent } from './createOpenAIMultimodalContent.js';
@@ -26,9 +26,11 @@ export const streamResponse: StreamModelResponse = async (
   const log = logForRun(runId);
 
   // TODO: probably extract these into a function
-  setHeaderForRunStream(runId, 'Content-Type', 'text/html; charset=utf-8');
-  setHeaderForRunStream(runId, 'Transfer-Encoding', 'chunked');
-  setHeaderForRunStream(runId, 'Keep-Alive', 'timeout=20, max=1000');
+  openRunStream(runId, {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Transfer-Encoding': 'chunked',
+    'Keep-Alive': 'timeout=20, max=1000',
+  });
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY as string }); // TODO very temporary
 

@@ -4,7 +4,7 @@ import { StreamModelResponse } from '..';
 import { logForRun } from '../../log.js';
 import {
   closeRun,
-  setHeaderForRunStream,
+  openRunStream,
   writeTextToRunStream,
 } from '../../runStreams.js';
 
@@ -46,8 +46,10 @@ export const streamResponse: StreamModelResponse = async (
   });
 
   // write the PNG from the replicate API to the express response
-  setHeaderForRunStream(runId, 'Content-Type', 'image/png');
-  setHeaderForRunStream(runId, 'Content-Length', png.data.length);
+  openRunStream(runId, {
+    'Content-Type': 'image/png',
+    'Content-Length': png.data.length,
+  });
   writeTextToRunStream(runId, png.data, null); // todo
 
   closeRun(runId);

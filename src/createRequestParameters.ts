@@ -34,16 +34,25 @@ export const createRequestParameters = async (
   for (const parameterKey of Object.keys(documentParameters)) {
     const parameter = documentParameters[parameterKey]; // todo: dupe params etc
     const queryValue = req.query[parameter.name];
+    const bodyValue =
+      // @ts-expect-error
+      req.nogginBody?.body && req.nogginBody?.body[parameter.name];
     switch (parameter.type) {
       case 'text':
-        if (queryValue) {
+        if (bodyValue) {
+          parameters[parameterKey] = bodyValue.toString();
+        } else if (queryValue) {
           parameters[parameterKey] = queryValue.toString();
         } else {
           parameters[parameterKey] = parameter.defaultValue || '';
         }
         break;
       case 'image':
-        if (queryValue) {
+        if (bodyValue) {
+          parameters[parameterKey] = await imageUrlToBase64(
+            bodyValue.toString(),
+          );
+        } else if (queryValue) {
           parameters[parameterKey] = await imageUrlToBase64(
             queryValue.toString(),
           );
