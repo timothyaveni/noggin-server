@@ -1,6 +1,12 @@
 import axios from 'axios';
 import Replicate from 'replicate';
 import { StreamModelResponse } from '..';
+import { logForRun } from '../../log.js';
+import {
+  closeRun,
+  setHeaderForRunStream,
+  writeTextToRunStream,
+} from '../../runStreams.js';
 
 type ModelParams = {
   prompt: string;
@@ -8,8 +14,11 @@ type ModelParams = {
 
 export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
-  { sendStatus, setResponseHeader, writeToResponseStream, endResponse, log },
+  runId: number,
+  { sendStatus },
 ) => {
+  const log = logForRun(runId);
+
   const replicate = new Replicate({
     auth: process.env.REPLICATE_API_TOKEN,
   });
@@ -37,9 +46,9 @@ export const streamResponse: StreamModelResponse = async (
   });
 
   // write the PNG from the replicate API to the express response
-  setResponseHeader('Content-Type', 'image/png');
-  setResponseHeader('Content-Length', png.data.length);
-  writeToResponseStream(png.data);
+  setHeaderForRunStream(runId, 'Content-Type', 'image/png');
+  setHeaderForRunStream(runId, 'Content-Length', png.data.length);
+  writeTextToRunStream(runId, png.data, null); // todo
 
-  endResponse();
+  closeRun(runId);
 };

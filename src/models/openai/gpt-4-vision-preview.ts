@@ -2,6 +2,12 @@ import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import { StreamModelResponse } from '..';
 import { StandardChat } from '../../evaluateParams';
+import { logForRun } from '../../log.js';
+import {
+  closeRun,
+  setHeaderForRunStream,
+  writeTextToRunStream,
+} from '../../runStreams.js';
 import { createOpenAIMultimodalContent } from './createOpenAIMultimodalContent.js';
 
 type ModelParams = {
@@ -15,12 +21,14 @@ type OpenAIChat = ChatCompletionMessageParam[];
 
 export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
-  { setResponseHeader, writeToResponseStream, endResponse, log },
+  runId: number,
 ) => {
+  const log = logForRun(runId);
+
   // TODO: probably extract these into a function
-  setResponseHeader('Content-Type', 'text/html; charset=utf-8');
-  setResponseHeader('Transfer-Encoding', 'chunked');
-  setResponseHeader('Keep-Alive', 'timeout=20, max=1000');
+  setHeaderForRunStream(runId, 'Content-Type', 'text/html; charset=utf-8');
+  setHeaderForRunStream(runId, 'Transfer-Encoding', 'chunked');
+  setHeaderForRunStream(runId, 'Keep-Alive', 'timeout=20, max=1000');
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY as string }); // TODO very temporary
 
@@ -50,8 +58,8 @@ export const streamResponse: StreamModelResponse = async (
   });
 
   for await (const chunk of stream) {
-    writeToResponseStream(chunk.choices[0]?.delta?.content || '');
+    writeTextToRunStream(runId, chunk.choices[0]?.delta?.content || '', chunk);
   }
 
-  endResponse();
+  closeRun(runId);
 };

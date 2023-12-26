@@ -1,5 +1,6 @@
 import { NogginRunLogEntryStage, NogginRunLogLevel } from '@prisma/client';
 import { prisma } from './prisma.js';
+import { writeLogToRunStream } from './runStreams.js';
 
 export type LogArgs = {
   level: NogginRunLogLevel;
@@ -9,6 +10,13 @@ export type LogArgs = {
 };
 
 export const logForRun = (runId: number) => async (log: LogArgs) => {
+  const withoutPrivateData = {
+    ...log,
+  };
+  delete withoutPrivateData.privateData;
+
+  writeLogToRunStream(runId, withoutPrivateData);
+
   return await prisma.nogginRunLogEntry.create({
     data: {
       runId,

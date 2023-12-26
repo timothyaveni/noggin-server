@@ -11,6 +11,7 @@ import { logForRun } from './log.js';
 import modelProviderIndex from './models/index.js';
 import { parseModelInputs } from './parseModelInputs.js';
 import { prisma } from './prisma.js';
+import { registerStream } from './runStreams.js';
 import { deserializeYDoc } from './y.js';
 
 const handleRequest = async (req: Request, res: Response) => {
@@ -236,13 +237,21 @@ const handleRequest = async (req: Request, res: Response) => {
       : () => {};
   const endResponse = intent === 'stream' ? () => res.end() : () => {};
 
+  registerStream(run.id, {
+    appendText: (text) => {
+      res.write(text);
+    },
+    setHeader: (key, value) => {
+      res.setHeader(key, value);
+    },
+    terminateStream: () => {
+      res.end();
+    },
+  });
+
   const { streamResponse } = modelProviderIndex(modelProviderName)(modelName);
-  streamResponse(evaluatedModelParams, {
-    setResponseHeader,
-    writeToResponseStream,
-    endResponse,
-    log,
-    sendStatus,
+  streamResponse(evaluatedModelParams, run.id, {
+    sendStatus, // todo refactor this out
   });
 };
 

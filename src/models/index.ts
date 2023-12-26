@@ -1,20 +1,12 @@
-import { LogArgs } from '../log.js';
 import openaiIndex from './openai/index.js';
 import replicateIndex from './replicate/index.js';
 
 export type StreamModelResponse = (
   evaluatedModelParams: any,
+  runId: number,
   {
-    setResponseHeader,
-    writeToResponseStream,
-    endResponse,
-    log,
     sendStatus,
   }: {
-    setResponseHeader: (key: string, value: string) => any;
-    writeToResponseStream: (chunk: any) => any;
-    endResponse: () => any;
-    log: (args: LogArgs) => Promise<any>;
     sendStatus: (
       status: number,
       response: { message: string } | { error: string },
