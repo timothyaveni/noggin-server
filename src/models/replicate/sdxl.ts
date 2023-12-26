@@ -8,7 +8,7 @@ type ModelParams = {
 
 export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
-  { response, log },
+  { sendStatus, setResponseHeader, writeToResponseStream, endResponse, log },
 ) => {
   const replicate = new Replicate({
     auth: process.env.REPLICATE_API_TOKEN,
@@ -28,7 +28,7 @@ export const streamResponse: StreamModelResponse = async (
   } catch (e) {
     // smdh nsfw content
     console.error(e);
-    return response.status(500).send('Internal server error');
+    return sendStatus(500, { error: 'Internal server error' });
   }
 
   // get the PNG from the replicate CDN
@@ -37,9 +37,9 @@ export const streamResponse: StreamModelResponse = async (
   });
 
   // write the PNG from the replicate API to the express response
-  response.setHeader('Content-Type', 'image/png');
-  response.setHeader('Content-Length', png.data.length);
-  response.write(png.data);
+  setResponseHeader('Content-Type', 'image/png');
+  setResponseHeader('Content-Length', png.data.length);
+  writeToResponseStream(png.data);
 
-  response.end();
+  endResponse();
 };

@@ -15,12 +15,12 @@ type OpenAIChat = ChatCompletionMessageParam[];
 
 export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
-  { response, log },
+  { setResponseHeader, writeToResponseStream, endResponse, log },
 ) => {
   // TODO: probably extract these into a function
-  response.setHeader('Content-Type', 'text/html; charset=utf-8');
-  response.setHeader('Transfer-Encoding', 'chunked');
-  response.setHeader('Keep-Alive', 'timeout=20, max=1000');
+  setResponseHeader('Content-Type', 'text/html; charset=utf-8');
+  setResponseHeader('Transfer-Encoding', 'chunked');
+  setResponseHeader('Keep-Alive', 'timeout=20, max=1000');
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY as string }); // TODO very temporary
 
@@ -50,8 +50,8 @@ export const streamResponse: StreamModelResponse = async (
   });
 
   for await (const chunk of stream) {
-    response.write(chunk.choices[0]?.delta?.content || '');
+    writeToResponseStream(chunk.choices[0]?.delta?.content || '');
   }
 
-  response.end();
+  endResponse();
 };

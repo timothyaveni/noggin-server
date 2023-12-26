@@ -20,13 +20,9 @@ export interface DocumentImageParameter extends DocumentBaseParameter {
 export type DocumentParameter = DocumentTextParameter | DocumentImageParameter;
 type _DPTypeCheck = DocumentParameter['type'];
 
-type DocumentParameters = {
-  [key: string]: DocumentParameter;
-};
+type DocumentParameters = Record<string, DocumentParameter>;
 
-export type RequestParameters = {
-  [key: string]: string;
-};
+export type RequestParameters = Record<string, string>;
 
 export const createRequestParameters = async (
   req: Request,
