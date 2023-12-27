@@ -2,11 +2,11 @@ import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import { StreamModelResponse } from '..';
 import { StandardChat } from '../../evaluateParams';
-import { logForRun } from '../../log.js';
 import {
-  closeRun,
   openRunStream,
-  writeTextToRunStream,
+  succeedRun,
+  writeIncrementalContentToRunStream,
+  writeLogToRunStream,
 } from '../../runStreams.js';
 import { createOpenAIMultimodalContent } from './createOpenAIMultimodalContent.js';
 
@@ -23,8 +23,6 @@ export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
   runId: number,
 ) => {
-  const log = logForRun(runId);
-
   // TODO: probably extract these into a function
   openRunStream(runId, {
     'Content-Type': 'text/html; charset=utf-8',
@@ -59,7 +57,7 @@ export const streamResponse: StreamModelResponse = async (
   let output = '';
 
   for await (const chunk of stream) {
-    await log({
+    writeLogToRunStream(runId, {
       level: 'debug',
       stage: 'run_model',
       message: {
@@ -72,7 +70,7 @@ export const streamResponse: StreamModelResponse = async (
     const partial = chunk.choices[0]?.delta?.content;
 
     if (partial) {
-      await log({
+      writeLogToRunStream(runId, {
         level: 'info',
         stage: 'run_model',
         message: {
@@ -82,11 +80,11 @@ export const streamResponse: StreamModelResponse = async (
         },
       });
       output += partial;
-      writeTextToRunStream(runId, partial, partial);
+      writeIncrementalContentToRunStream(runId, 'text', partial, chunk);
     }
   }
 
-  await log({
+  writeLogToRunStream(runId, {
     level: 'info',
     stage: 'run_model',
     message: {
@@ -96,5 +94,5 @@ export const streamResponse: StreamModelResponse = async (
     },
   });
 
-  closeRun(runId);
+  succeedRun(runId, 'text', output);
 };

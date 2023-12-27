@@ -7,11 +7,10 @@ import { evaluateParamsInModelInputs } from './evaluateParams.js';
 import inferIntent from './inferIntent.js';
 import inferNogginAPIKey from './inferNogginAPIKey.js';
 import inferNogginSlug from './inferNogginSlug.js';
-import { logForRun } from './log.js';
 import modelProviderIndex from './models/index.js';
 import { parseModelInputs } from './parseModelInputs.js';
 import { prisma } from './prisma.js';
-import { registerStream } from './runStreams.js';
+import { registerStream, writeLogToRunStream } from './runStreams.js';
 import { deserializeYDoc } from './y.js';
 
 const handleRequest = async (req: Request, res: Response) => {
@@ -43,6 +42,7 @@ const handleRequest = async (req: Request, res: Response) => {
   const nogginSlug = inferNogginSlug(req);
 
   if (!nogginSlug) {
+    console.log('no noggin slug');
     return sendStatus(404, { error: 'Not found' });
   }
 
@@ -83,6 +83,7 @@ const handleRequest = async (req: Request, res: Response) => {
     data: {
       uuid: uuid(),
       nogginRevisionId: nogginRevision.id,
+      status: 'pending',
     },
   });
 
@@ -92,12 +93,10 @@ const handleRequest = async (req: Request, res: Response) => {
     sendStatus(201, { message: run.uuid });
   }
 
-  const log = logForRun(run.id);
-
   const key = inferNogginAPIKey(req);
 
   if (!key) {
-    await log({
+    writeLogToRunStream(run.id, {
       level: 'error',
       stage: 'authenticate',
       message: {
@@ -108,7 +107,7 @@ const handleRequest = async (req: Request, res: Response) => {
     return sendStatus(400, { error: 'Missing key' });
   }
 
-  await log({
+  writeLogToRunStream(run.id, {
     level: 'info',
     stage: 'authenticate',
     message: {
@@ -127,7 +126,7 @@ const handleRequest = async (req: Request, res: Response) => {
   });
 
   if (!nogginApiKey) {
-    await log({
+    writeLogToRunStream(run.id, {
       level: 'error',
       stage: 'authenticate',
       message: {
@@ -142,7 +141,7 @@ const handleRequest = async (req: Request, res: Response) => {
   }
 
   if (nogginApiKey.nogginId !== noggin.id) {
-    await log({
+    writeLogToRunStream(run.id, {
       level: 'error',
       stage: 'authenticate',
       message: {
@@ -183,7 +182,7 @@ const handleRequest = async (req: Request, res: Response) => {
         };
       });
 
-  await log({
+  writeLogToRunStream(run.id, {
     level: 'info',
     stage: 'process_parameters',
     message: {
@@ -228,6 +227,32 @@ const handleRequest = async (req: Request, res: Response) => {
       intent === 'stream'
         ? (text) => {
             res.write(text);
+          }
+        : undefined,
+    finalizeText:
+      intent === 'stream'
+        ? (text) => {
+            // res.write(text);
+            // do nothing! we already streamed it
+          }
+        : undefined,
+    finalizeAsset:
+      intent === 'stream'
+        ? (assetUrl) => {
+            if (res.headersSent) {
+              // not much we can do.
+              // todo, log?
+              return;
+            }
+
+            // todo we're planning to proxy this.. i guess.. though now that i think about it, maybe it's for the best that we redirect to the cdn (which will be our owned upload) unless the client asks us not to with some param
+            res.redirect(assetUrl);
+          }
+        : undefined,
+    reportFinalError:
+      intent === 'stream'
+        ? (errorMessage) => {
+            res.status(500).send(errorMessage);
           }
         : undefined,
     setHeader:

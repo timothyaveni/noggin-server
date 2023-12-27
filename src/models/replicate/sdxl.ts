@@ -1,12 +1,7 @@
 import axios from 'axios';
 import Replicate from 'replicate';
 import { StreamModelResponse } from '..';
-import { logForRun } from '../../log.js';
-import {
-  closeRun,
-  openRunStream,
-  writeTextToRunStream,
-} from '../../runStreams.js';
+import { failRun, openRunStream, succeedRun } from '../../runStreams.js';
 
 type ModelParams = {
   prompt: string;
@@ -17,8 +12,6 @@ export const streamResponse: StreamModelResponse = async (
   runId: number,
   { sendStatus },
 ) => {
-  const log = logForRun(runId);
-
   const replicate = new Replicate({
     auth: process.env.REPLICATE_API_TOKEN,
   });
@@ -36,8 +29,10 @@ export const streamResponse: StreamModelResponse = async (
     output = (await replicate.run(model, { input })) as string[];
   } catch (e) {
     // smdh nsfw content
-    console.error(e);
-    return sendStatus(500, { error: 'Internal server error' });
+    // console.error(e);
+    // return sendStatus(500, { error: 'Internal server error' });
+    failRun(runId, 'Error from Replicate API', e);
+    return;
   }
 
   // get the PNG from the replicate CDN
@@ -47,10 +42,10 @@ export const streamResponse: StreamModelResponse = async (
 
   // write the PNG from the replicate API to the express response
   openRunStream(runId, {
-    'Content-Type': 'image/png',
-    'Content-Length': png.data.length,
+    // 'Content-Type': 'image/png',
+    // 'Content-Length': png.data.length,
   });
-  writeTextToRunStream(runId, png.data, null); // todo
 
-  closeRun(runId);
+  // TODO same as other
+  succeedRun(runId, 'assetUrl', output[0]);
 };

@@ -2,11 +2,10 @@ import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import { StreamModelResponse } from '..';
 import { StandardChat } from '../../evaluateParams';
-import { logForRun } from '../../log.js';
 import {
-  closeRun,
   openRunStream,
-  writeTextToRunStream,
+  succeedRun,
+  writeIncrementalContentToRunStream,
 } from '../../runStreams.js';
 import { createOpenAIMultimodalContent } from './createOpenAIMultimodalContent.js';
 
@@ -23,8 +22,6 @@ export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
   runId: number,
 ) => {
-  const log = logForRun(runId);
-
   // TODO: probably extract these into a function
   openRunStream(runId, {
     'Content-Type': 'text/html; charset=utf-8',
@@ -59,9 +56,13 @@ export const streamResponse: StreamModelResponse = async (
     stream: true,
   });
 
+  let output = '';
+
   for await (const chunk of stream) {
-    writeTextToRunStream(runId, chunk.choices[0]?.delta?.content || '', chunk);
+    const partial = chunk.choices[0]?.delta?.content || '';
+    output += partial;
+    writeIncrementalContentToRunStream(runId, 'text', partial, chunk);
   }
 
-  closeRun(runId);
+  succeedRun(runId, 'text', output);
 };

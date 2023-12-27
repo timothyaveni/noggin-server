@@ -1,8 +1,8 @@
-import { logForRun } from '../../log.js';
 import {
-  closeRun,
   openRunStream,
-  writeTextToRunStream,
+  succeedRun,
+  writeIncrementalContentToRunStream,
+  writeLogToRunStream,
 } from '../../runStreams.js';
 import { StreamModelResponse } from '../index.js';
 
@@ -14,8 +14,6 @@ export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
   runId: number,
 ) => {
-  const log = logForRun(runId);
-
   // TODO: probably extract these into a function
   openRunStream(runId, {
     'Content-Type': 'text/html; charset=utf-8',
@@ -34,7 +32,7 @@ export const streamResponse: StreamModelResponse = async (
   for (let i = 0; i < breadstickCount; i++) {
     const partial = breadstick;
 
-    await log({
+    writeLogToRunStream(runId, {
       level: 'debug',
       stage: 'run_model',
       message: {
@@ -43,12 +41,12 @@ export const streamResponse: StreamModelResponse = async (
         chunk: partial,
       },
     });
-    writeTextToRunStream(runId, partial, null);
+    writeIncrementalContentToRunStream(runId, 'text', partial);
     output += partial;
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
 
-  await log({
+  writeLogToRunStream(runId, {
     level: 'info',
     stage: 'run_model',
     message: {
@@ -58,5 +56,5 @@ export const streamResponse: StreamModelResponse = async (
     },
   });
 
-  closeRun(runId);
+  succeedRun(runId, 'text', output);
 };

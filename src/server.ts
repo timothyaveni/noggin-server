@@ -174,8 +174,35 @@ wss.on('connection', async (ws: WebSocket, req: Request) => {
     appendText: (text, metadata) => {
       ws.send(
         JSON.stringify({
-          type: 'output',
+          type: 'incremental output',
           text,
+          metadata,
+        }),
+      );
+    },
+    finalizeText: (text, metadata) => {
+      ws.send(
+        JSON.stringify({
+          type: 'final output',
+          text,
+          metadata,
+        }),
+      );
+    },
+    finalizeAsset: (assetUrl, metadata) => {
+      ws.send(
+        JSON.stringify({
+          type: 'asset URL',
+          assetUrl,
+          metadata,
+        }),
+      );
+    },
+    reportFinalError: (error, metadata) => {
+      ws.send(
+        JSON.stringify({
+          type: 'error',
+          error,
           metadata,
         }),
       );

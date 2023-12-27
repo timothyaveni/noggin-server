@@ -37,6 +37,8 @@ const inferNogginSlug = (req: Request): string | null => {
     }
   }
 
+  console.log({ properPathSlug, allPathSlugs, path });
+
   // let properQuerySlug = null;
   // const allQuerySlugs = [];
 
