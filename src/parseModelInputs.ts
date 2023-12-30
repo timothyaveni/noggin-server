@@ -1,16 +1,20 @@
 import { yTextToSlateElement } from '@slate-yjs/core';
 import * as Y from 'yjs';
+import { EditorSchema } from './reagent-noggin-shared/types/editorSchema';
 
 // TODO sync type
-// @ts-expect-error
-export const parseModelInputs = (modelInputsMap: Y.Map, editorSchema: any) => {
+export const parseModelInputs = (
+  // @ts-expect-error
+  modelInputsMap: Y.Map,
+  editorSchema: EditorSchema,
+) => {
   const parsedInputs: any = {};
 
-  for (const inputKey of Object.keys(editorSchema.allInputs)) {
-    const input = editorSchema.allInputs[inputKey];
+  for (const inputKey of Object.keys(editorSchema.allEditorComponents)) {
+    const input = editorSchema.allEditorComponents[inputKey];
     switch (input.type) {
       case 'chat-text-user-images-with-parameters':
-        // throw new Error('TODO');
+      // throw new Error('TODO');
       case 'chat-text-with-parameters':
         parsedInputs[inputKey] = slateChatToStandardChat(
           yTextToSlateElement(modelInputsMap.get(inputKey, Y.XmlText)),

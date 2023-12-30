@@ -55,6 +55,29 @@ export const streamResponse: StreamModelResponse = async (
   const stream = await openai.chat.completions.create({
     messages,
     model: 'gpt-4-1106-preview',
+    // tools: [
+    //   {
+    //     type: 'function',
+    //     function: {
+    //       name: 'respond',
+    //       parameters: {
+    //         type: 'object',
+    //         properties: {
+    //           answer: {
+    //             enum: ['red', 'blue', 'green'],
+    //           },
+    //         },
+    //         required: ['answer'],
+    //       },
+    //     },
+    //   },
+    // ],
+    // tool_choice: {
+    //   type: 'function',
+    //   function: {
+    //     name: 'respond',
+    //   },
+    // },
     stream: true,
   });
 
@@ -70,6 +93,8 @@ export const streamResponse: StreamModelResponse = async (
         chunk,
       },
     });
+
+    console.log(JSON.stringify(chunk, null, 2));
 
     const partial = chunk.choices[0]?.delta?.content;
 

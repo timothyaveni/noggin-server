@@ -1,13 +1,15 @@
+import { EditorSchema } from './reagent-noggin-shared/types/editorSchema';
+
 export const evaluateParamsInModelInputs = (
   modelInputs: any,
-  editorSchema: any,
+  editorSchema: EditorSchema,
   documentParameters: any,
   parameters: any,
 ) => {
   const newModelInputs: any = {};
 
-  for (const inputKey of Object.keys(editorSchema.allInputs)) {
-    const input = editorSchema.allInputs[inputKey];
+  for (const inputKey of Object.keys(editorSchema.allEditorComponents)) {
+    const input = editorSchema.allEditorComponents[inputKey];
     switch (input.type) {
       case 'chat-text-user-images-with-parameters':
       case 'chat-text-with-parameters':
