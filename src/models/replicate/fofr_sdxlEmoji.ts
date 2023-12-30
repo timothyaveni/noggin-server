@@ -10,10 +10,14 @@ type ModelParams = {
 export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
   runId: number,
+  providerCredentials: {
+    credentialsVersion: 1;
+    credentials: { apiToken: string };
+  },
   { sendStatus },
 ) => {
   const replicate = new Replicate({
-    auth: process.env.REPLICATE_API_TOKEN,
+    auth: providerCredentials.credentials.apiToken,
   });
 
   const model =

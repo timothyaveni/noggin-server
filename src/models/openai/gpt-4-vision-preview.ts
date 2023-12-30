@@ -21,6 +21,10 @@ type OpenAIChat = ChatCompletionMessageParam[];
 export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
   runId: number,
+  providerCredentials: {
+    credentialsVersion: 1;
+    credentials: { apiKey: string };
+  },
 ) => {
   // TODO: probably extract these into a function
   openRunStream(runId, {
@@ -29,7 +33,7 @@ export const streamResponse: StreamModelResponse = async (
     'Keep-Alive': 'timeout=20, max=1000',
   });
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY as string }); // TODO very temporary
+  const openai = new OpenAI({ apiKey: providerCredentials.credentials.apiKey });
 
   const messages: OpenAIChat = [];
 

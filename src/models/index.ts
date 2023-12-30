@@ -5,6 +5,7 @@ import testIndex from './test/index.js';
 export type StreamModelResponse = (
   evaluatedModelParams: any,
   runId: number,
+  providerCredentials: any,
   {
     sendStatus,
   }: {
@@ -15,13 +16,13 @@ export type StreamModelResponse = (
   },
 ) => Promise<any>;
 
-export type ModelFunctions = {
+export type ModelExports = {
   streamResponse: StreamModelResponse;
 };
 
 export default function index(
   providerName: string,
-): (modelName: string) => ModelFunctions {
+): (modelName: string) => ModelExports {
   switch (providerName) {
     case 'openai':
       return openaiIndex;

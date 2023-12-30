@@ -1,7 +1,7 @@
-import { ModelFunctions } from '../index.js';
+import { ModelExports } from '../index.js';
 import { streamResponse as streamResponse_unlimitedBreadsticks } from './unlimited-breadsticks.js';
 
-export default function openaiIndex(modelName: string): ModelFunctions {
+export default function openaiIndex(modelName: string): ModelExports {
   switch (modelName) {
     case 'unlimited-breadsticks':
       return {

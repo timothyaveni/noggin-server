@@ -4,6 +4,7 @@ import * as Y from 'yjs';
 
 import { createRequestParameters } from './createRequestParameters.js';
 import { evaluateParamsInModelInputs } from './evaluateParams.js';
+import { getProviderCredentialsForNoggin_OMNISCIENT } from './getCredentials.js';
 import inferIntent from './inferIntent.js';
 import inferNogginAPIKey from './inferNogginAPIKey.js';
 import inferNogginSlug from './inferNogginSlug.js';
@@ -269,8 +270,27 @@ const handleRequest = async (req: Request, res: Response) => {
         : undefined,
   });
 
+  const { providerCredentials, needsCredentials } =
+    await getProviderCredentialsForNoggin_OMNISCIENT(noggin.id);
+
+  if (needsCredentials && !providerCredentials) {
+    writeLogToRunStream(run.id, {
+      level: 'error',
+      stage: 'run_model',
+      message: {
+        type: 'credentials_missing',
+        text: 'This model provider requires credentials to run models, but they were not configured.',
+      },
+    });
+    return sendStatus(403, {
+      error:
+        'This model provider requires credentials to run models, but they were not configured.',
+    });
+  }
+
   const { streamResponse } = modelProviderIndex(modelProviderName)(modelName);
-  streamResponse(evaluatedModelParams, run.id, {
+
+  streamResponse(evaluatedModelParams, run.id, providerCredentials, {
     sendStatus, // todo refactor this out
   });
 };
