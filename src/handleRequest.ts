@@ -11,6 +11,7 @@ import inferNogginSlug from './inferNogginSlug.js';
 import modelProviderIndex from './models/index.js';
 import { parseModelInputs } from './parseModelInputs.js';
 import { prisma } from './prisma.js';
+import { EditorSchema } from './reagent-noggin-shared/types/editorSchema.js';
 import { registerStream, writeLogToRunStream } from './runStreams.js';
 import { deserializeYDoc } from './y.js';
 
@@ -176,7 +177,7 @@ const handleRequest = async (req: Request, res: Response) => {
       })
       .then((aiModel) => {
         return {
-          editorSchema: aiModel.editorSchema,
+          editorSchema: aiModel.editorSchema as unknown as EditorSchema,
           modelName: aiModel.name,
           revision: aiModel.revision,
           modelProviderName: aiModel.modelProvider.name,
