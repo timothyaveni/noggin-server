@@ -183,7 +183,7 @@ wss.on('connection', async (ws: WebSocket, req: Request) => {
     finalizeText: (text, metadata) => {
       ws.send(
         JSON.stringify({
-          type: 'final output',
+          type: 'final output text',
           text,
           metadata,
         }),
@@ -192,7 +192,7 @@ wss.on('connection', async (ws: WebSocket, req: Request) => {
     finalizeAsset: (assetUrl, metadata) => {
       ws.send(
         JSON.stringify({
-          type: 'asset URL',
+          type: 'final output asset URL',
           assetUrl,
           metadata,
         }),
