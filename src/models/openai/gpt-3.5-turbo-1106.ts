@@ -116,7 +116,11 @@ export const streamResponse: StreamModelResponse = async (
     if (outputStructureSchema.type === 'object') {
       gptSchema = outputStructureSchema;
     } else {
+      const subSchema = { ...outputStructureSchema };
+      // delete subSchema['$schema'];
+
       gptSchema = {
+        // $schema: 'http://json-schema.org/draft-07/schema#',
         type: 'object',
         properties: {
           answer: outputStructureSchema,
@@ -125,6 +129,23 @@ export const streamResponse: StreamModelResponse = async (
       };
       needsUnwrap = true;
     }
+
+    console.log(
+      'tools',
+      JSON.stringify(
+        [
+          {
+            type: 'function',
+            function: {
+              name: 'respond',
+              parameters: gptSchema as FunctionParameters,
+            },
+          },
+        ],
+        null,
+        2,
+      ),
+    );
 
     const result = await openai.chat.completions.create({
       messages,
@@ -153,7 +174,12 @@ export const streamResponse: StreamModelResponse = async (
 
     if (needsUnwrap) {
       // TODO: we are parsing here, which is a little weird, since we prefer to avoid doing it -- let the user deal with the fallout of a truncated response -- unless they asked us to. but we have to, to get this working. i stringify again just for consistency
-      output = JSON.stringify(JSON.parse(output).answer);
+      const parsed = JSON.parse(output).answer;
+      if (typeof parsed === 'string') {
+        output = parsed; // otherwise it'll have quotes
+      } else {
+        output = JSON.stringify(JSON.parse(output).answer) || '';
+      }
     }
 
     writeIncrementalContentToRunStream(runId, 'text', output, result);

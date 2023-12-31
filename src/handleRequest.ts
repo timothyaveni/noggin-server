@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { Request, Response } from 'express';
 import { v4 as uuid } from 'uuid';
 import * as Y from 'yjs';
@@ -62,6 +63,19 @@ const handleRequest = async (req: Request, res: Response) => {
     // todo: show which slugs we tried using
     return sendStatus(404, { error: 'Not found' });
   }
+
+  // TODO: handle error
+  await axios.post(
+    `${process.env.Y_WEBSOCKET_SERVER_INTERNAL_URL}/immediate-sync`,
+    {
+      nogginId: noggin.id,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.SHARED_Y_WEBSOCKET_SERVER_SECRET}`,
+      },
+    },
+  );
 
   // TODO: not the best way to get the latest revision
   const nogginRevision = await prisma.nogginRevision.findFirst({

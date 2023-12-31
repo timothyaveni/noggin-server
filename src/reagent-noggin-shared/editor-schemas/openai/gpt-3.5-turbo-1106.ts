@@ -58,7 +58,7 @@ const schema: EditorSchema = {
       type: 'simple-schema',
       includeOutputTransformations: true, // actually, maybe this SHOULD be a separate component -- it'd be handy for reformatting free-form JSON output
       default: {
-        $schema: 'http://json-schema.org/draft-07/schema#',
+        // $schema: 'http://json-schema.org/draft-07/schema#',
         type: 'string',
       },
     },
@@ -102,7 +102,7 @@ const schema: EditorSchema = {
       },
       description: {
         en_US:
-          "The model will output structured data in a format you specify. For this particular model, the requested structure will be automatically included in the model's prompt.\n\n```warn\nThis model's JSON output may not always match your requested structure perfectly (e.g. it may hallucinate parameters you did not ask for).\n```",
+          "The model will output structured data in a format you specify. The model will be informed of the requested structure automatically in the prompt.\n\n```warn\nAlthough this model was trained to adhere to the provided schema, its output may not always match your requested structure perfectly.\n\nIn our observations, the model's outputs consistently have some structure but sometimes include additional unrequested output or omit requested data (even providing an empty response completely). In your prompt, you should **insist** that the model provide a response.\n```",
       },
       editorComponents: ['output-structure'],
     },
