@@ -1,3 +1,5 @@
+import { JSONSchema7 } from 'json-schema';
+
 export type I18nString = {
   en_US: string;
   [languageCode: string]: string;
@@ -26,36 +28,48 @@ interface ModelInput_ChatTextWithParameters extends ModelInputBase {
   editorHeight?: EditorHeight;
 }
 
+type ModelInput_Number_Value = number;
+
 interface ModelInput_Number extends ModelInputBase {
   type: 'number';
-  default: number;
+  default: ModelInput_Number_Value;
   min: number;
   max: number;
 }
+
+type ModelInput_Integer_Value = number;
 
 interface ModelInput_Integer extends ModelInputBase {
   type: 'integer';
-  default: number;
+  default: ModelInput_Integer_Value;
   min: number;
   max: number;
 }
 
+type ModelInput_Boolean_Value = boolean;
+
 interface ModelInput_Boolean extends ModelInputBase {
   type: 'boolean';
-  default: boolean;
+  default: ModelInput_Boolean_Value;
 }
+
+// todo fancy type params here or something
+type ModelInput_Select_Value = string | string[];
 
 interface ModelInput_Select extends ModelInputBase {
   type: 'select';
   options: {
     [optionKey: string]: I18nString;
   };
-  default: string;
-  multiple: boolean;
+  default: ModelInput_Select_Value;
+  multiple: false;
 }
+
+type ModelInput_SimpleSchema_Value = JSONSchema7;
 
 interface ModelInput_SimpleSchema extends ModelInputBase {
   type: 'simple-schema';
+  default: ModelInput_SimpleSchema_Value; // TODO really this repo should have all of the value-types for these inputs
   includeOutputTransformations: boolean;
 }
 
@@ -71,6 +85,8 @@ export type ModelInput =
 
 type OutputFormat = {
   type: 'chat-text' | 'completion' | 'image' | 'structured-data';
+  key: string;
+  name: I18nString;
   description: I18nString;
   editorComponents: string[];
 };

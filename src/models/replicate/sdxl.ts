@@ -9,6 +9,7 @@ type ModelParams = {
 
 export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
+  chosenOutputFormat,
   runId: number,
   providerCredentials: {
     credentialsVersion: 1;

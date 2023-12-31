@@ -55,6 +55,10 @@ const schema: EditorSchema = {
   outputFormats: [
     {
       type: 'image',
+      key: 'image',
+      name: {
+        en_US: 'Image',
+      },
       description: {
         en_US: 'This model will output a single image file.',
       },

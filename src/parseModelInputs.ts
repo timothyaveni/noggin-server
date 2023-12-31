@@ -33,6 +33,19 @@ export const parseModelInputs = (
         // TODO
         console.log(inputKey, modelInputsMap.get(inputKey));
         break;
+      case 'boolean':
+        // TODO
+        console.log(inputKey, modelInputsMap.get(inputKey));
+        break;
+      case 'select':
+        // TODO
+        console.log(inputKey, modelInputsMap.get(inputKey));
+        break;
+      case 'simple-schema':
+        parsedInputs[inputKey] = modelInputsMap.get(inputKey);
+        break;
+      default:
+        const _exhaustiveCheck: never = input;
     }
   }
 

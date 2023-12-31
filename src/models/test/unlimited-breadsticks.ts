@@ -12,6 +12,7 @@ type ModelParams = {
 
 export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
+  chosenOutputFormat,
   runId: number,
 ) => {
   // TODO: probably extract these into a function

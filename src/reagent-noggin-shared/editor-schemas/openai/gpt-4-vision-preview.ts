@@ -58,9 +58,13 @@ const schema: EditorSchema = {
   outputFormats: [
     {
       type: 'chat-text',
+      key: 'chat-text',
+      name: {
+        en_US: 'Freeform text (chat response)',
+      },
       description: {
         en_US:
-          'This model will output freeform text as a response to the chat input prompt. Because it is a chat model, it has been trained to output a "response" to the prompt, and the model responds well to direct instructions.',
+          'This model will output freeform text. Because it is a chat model, it has been trained to output a "response" to the chat input prompt, and the model responds well to direct instructions.',
       },
       editorComponents: ['maximum-completion-length'],
     },

@@ -1,5 +1,9 @@
+import { JSONSchema7 } from 'json-schema';
 import OpenAI from 'openai';
-import { ChatCompletionMessageParam } from 'openai/resources';
+import {
+  ChatCompletionMessageParam,
+  FunctionParameters,
+} from 'openai/resources';
 import { StandardChat } from '../../evaluateParams.js';
 import {
   openRunStream,
@@ -15,12 +19,14 @@ type ModelParams = {
   'chat-prompt': StandardChat;
   // 'temperature': number;
   // 'max-tokens': number;
+  'output-structure': JSONSchema7;
 };
 
 type OpenAIChat = ChatCompletionMessageParam[];
 
 export const streamResponse: StreamModelResponse = async (
   evaluatedModelParams: ModelParams,
+  chosenOutputFormat,
   runId: number,
   providerCredentials: {
     credentialsVersion: 1;
@@ -52,52 +58,106 @@ export const streamResponse: StreamModelResponse = async (
     } as ChatCompletionMessageParam); // something is going weird with the TS overload here
   }
 
-  const stream = await openai.chat.completions.create({
-    messages,
-    model: 'gpt-3.5-turbo-1106',
-    stream: true,
-  });
+  if (chosenOutputFormat.type === 'chat-text') {
+    const stream = await openai.chat.completions.create({
+      messages,
+      model: 'gpt-3.5-turbo-1106',
+      stream: true,
+    });
 
-  let output = '';
+    let output = '';
 
-  // TODO: some of these models are kinda crazy fast -- we definitely want to throttle/batch log calls, even if we write to the response stream more frequently
-  for await (const chunk of stream) {
+    // TODO: some of these models are kinda crazy fast -- we definitely want to throttle/batch log calls, even if we write to the response stream more frequently
+    for await (const chunk of stream) {
+      writeLogToRunStream(runId, {
+        level: 'debug',
+        stage: 'run_model',
+        message: {
+          type: 'model_chunk',
+          text: 'Model chunk',
+          chunk,
+        },
+      });
+
+      const partial = chunk.choices[0]?.delta?.content;
+
+      if (partial) {
+        writeLogToRunStream(runId, {
+          level: 'info',
+          stage: 'run_model',
+          message: {
+            type: 'model_partial_output',
+            text: 'Model partial output',
+            output: partial,
+          },
+        });
+        output += partial;
+        writeIncrementalContentToRunStream(runId, 'text', partial, chunk);
+      }
+    }
+
     writeLogToRunStream(runId, {
-      level: 'debug',
+      level: 'info',
       stage: 'run_model',
       message: {
-        type: 'model_chunk',
-        text: 'Model chunk',
-        chunk,
+        type: 'model_full_output',
+        text: 'Model full output',
+        output,
       },
     });
 
-    const partial = chunk.choices[0]?.delta?.content;
+    succeedRun(runId, 'text', output);
+  } else if (chosenOutputFormat.type === 'structured-data') {
+    const outputStructureSchema = evaluatedModelParams['output-structure'];
 
-    if (partial) {
-      writeLogToRunStream(runId, {
-        level: 'info',
-        stage: 'run_model',
-        message: {
-          type: 'model_partial_output',
-          text: 'Model partial output',
-          output: partial,
+    let gptSchema;
+    let needsUnwrap = false;
+
+    if (outputStructureSchema.type === 'object') {
+      gptSchema = outputStructureSchema;
+    } else {
+      gptSchema = {
+        type: 'object',
+        properties: {
+          answer: outputStructureSchema,
         },
-      });
-      output += partial;
-      writeIncrementalContentToRunStream(runId, 'text', partial, chunk);
+        required: ['answer'],
+      };
+      needsUnwrap = true;
     }
+
+    const result = await openai.chat.completions.create({
+      messages,
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'respond',
+            parameters: gptSchema as FunctionParameters,
+          },
+        },
+      ],
+      tool_choice: {
+        type: 'function',
+        function: {
+          name: 'respond',
+        },
+      },
+      model: 'gpt-3.5-turbo-1106',
+    });
+
+    console.log(JSON.stringify(result, null, 2));
+
+    let output =
+      result.choices[0].message.tool_calls?.[0].function.arguments || '{}';
+
+    if (needsUnwrap) {
+      // TODO: we are parsing here, which is a little weird, since we prefer to avoid doing it -- let the user deal with the fallout of a truncated response -- unless they asked us to. but we have to, to get this working. i stringify again just for consistency
+      output = JSON.stringify(JSON.parse(output).answer);
+    }
+
+    writeIncrementalContentToRunStream(runId, 'text', output, result);
+
+    succeedRun(runId, 'text', output);
   }
-
-  writeLogToRunStream(runId, {
-    level: 'info',
-    stage: 'run_model',
-    message: {
-      type: 'model_full_output',
-      text: 'Model full output',
-      output,
-    },
-  });
-
-  succeedRun(runId, 'text', output);
 };

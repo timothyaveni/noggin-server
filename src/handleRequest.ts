@@ -207,6 +207,8 @@ const handleRequest = async (req: Request, res: Response) => {
 
   const documentParameters = yDoc.get('documentParameters', Y.Map).toJSON();
 
+  const nogginOptions = yDoc.get('nogginOptions', Y.Map).toJSON();
+
   // TODO: filter out reserved params like 'key'
   const requestParameters = await createRequestParameters(
     req,
@@ -291,9 +293,20 @@ const handleRequest = async (req: Request, res: Response) => {
 
   const { streamResponse } = modelProviderIndex(modelProviderName)(modelName);
 
-  streamResponse(evaluatedModelParams, run.id, providerCredentials, {
-    sendStatus, // todo refactor this out
-  });
+  const chosenOutputFormat =
+    editorSchema.outputFormats.find(
+      (format) => format.key === nogginOptions.chosenOutputFormatKey,
+    ) || editorSchema.outputFormats[0]; // todo log error if not found
+
+  streamResponse(
+    evaluatedModelParams,
+    chosenOutputFormat,
+    run.id,
+    providerCredentials,
+    {
+      sendStatus, // todo refactor this out
+    },
+  );
 };
 
 export default handleRequest;

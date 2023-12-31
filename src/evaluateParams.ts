@@ -34,6 +34,19 @@ export const evaluateParamsInModelInputs = (
         // TODO
         console.log(inputKey, modelInputs[inputKey]);
         break;
+      case 'boolean':
+        // TODO
+        console.log(inputKey, modelInputs[inputKey]);
+        break;
+      case 'select':
+        // TODO
+        console.log(inputKey, modelInputs[inputKey]);
+        break;
+      case 'simple-schema':
+        newModelInputs[inputKey] = modelInputs[inputKey]; // no params just yet
+        break;
+      default:
+        const _exhaustiveCheck: never = input;
     }
   }
 
@@ -101,13 +114,17 @@ export const evaluateParamsInChatText = (
               });
               break;
             default:
-              throw new Error('Unknown parameter type ' + parameterType);
+              // throw new Error('Unknown parameter type ' + parameterType);
+              // TODO log an error
+              break;
           }
           break;
         case 'inline-image':
           throw new Error('Not implemented'); // TODO
         default:
-          throw new Error('Unknown chunk type ' + chunk.type);
+          // throw new Error('Unknown chunk type ' + chunk.type);
+          // TODO log an error. we can't be throwing, it crashes the whole server... probably something we should fix anyway...
+          break;
       }
     }
 

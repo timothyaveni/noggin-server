@@ -22,6 +22,10 @@ const schema: EditorSchema = {
   outputFormats: [
     {
       type: 'completion',
+      key: 'completion',
+      name: {
+        en_US: 'Freeform text',
+      },
       description: {
         en_US: 'This model will output freeform text.',
       },

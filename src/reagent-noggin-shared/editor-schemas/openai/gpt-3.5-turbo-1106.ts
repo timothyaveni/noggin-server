@@ -48,6 +48,20 @@ const schema: EditorSchema = {
       min: 1,
       max: 16384,
     },
+    'output-structure': {
+      name: {
+        en_US: 'Output structure',
+      },
+      description: {
+        en_US: '',
+      },
+      type: 'simple-schema',
+      includeOutputTransformations: true, // actually, maybe this SHOULD be a separate component -- it'd be handy for reformatting free-form JSON output
+      default: {
+        $schema: 'http://json-schema.org/draft-07/schema#',
+        type: 'string',
+      },
+    },
     // todo: ['stop-sequences', 'top-p', 'frequency-penalty', 'presence-penalty'],
   },
 
@@ -58,11 +72,39 @@ const schema: EditorSchema = {
   outputFormats: [
     {
       type: 'chat-text',
+      key: 'chat-text',
+      name: {
+        en_US: 'Freeform text (chat response)',
+      },
       description: {
         en_US:
-          'This model will output freeform text as a response to the chat input prompt. Because it is a chat model, it has been trained to output a "response" to the prompt, and the model responds well to direct instructions.',
+          'This model will output freeform text. Because it is a chat model, it has been trained to output a "response" to the chat input prompt, and the model responds well to direct instructions.',
       },
       editorComponents: ['maximum-completion-length'],
+    },
+    // {
+    //   type: 'json',
+    //   key: 'json',
+    //   name: {
+    //     en_US: 'Freeform JSON',
+    //   },
+    //   description: {
+    //     en_US:
+    //       "The model will output valid, parseable JSON. The output is not guaranteed to conform to any particular structure, so you should be clear in your prompt about what you'd like the model to output.\n\n```warn\nYou should explicitly instruct the model to output JSON in your prompt, or it may output only whitespace tokens.\n```",
+    //   },
+    //   editorComponents: [],
+    // },
+    {
+      type: 'structured-data',
+      key: 'structured-data',
+      name: {
+        en_US: 'Structured data',
+      },
+      description: {
+        en_US:
+          "The model will output structured data in a format you specify. For this particular model, the requested structure will be automatically included in the model's prompt.\n\n```warn\nThis model's JSON output may not always match your requested structure perfectly (e.g. it may hallucinate parameters you did not ask for).\n```",
+      },
+      editorComponents: ['output-structure'],
     },
   ],
 };
