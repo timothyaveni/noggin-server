@@ -48,6 +48,20 @@ const schema: EditorSchema = {
       min: 1,
       max: 4095,
     },
+    'output-structure': {
+      name: {
+        en_US: 'Output structure',
+      },
+      description: {
+        en_US: '',
+      },
+      type: 'simple-schema',
+      includeOutputTransformations: true, // actually, maybe this SHOULD be a separate component -- it'd be handy for reformatting free-form JSON output
+      default: {
+        // $schema: 'http://json-schema.org/draft-07/schema#',
+        type: 'string',
+      },
+    },
     // todo: ['stop-sequences', 'top-p', 'frequency-penalty', 'presence-penalty'],
   },
 
@@ -67,6 +81,18 @@ const schema: EditorSchema = {
           'This model will output freeform text. Because it is a chat model, it has been trained to output a "response" to the chat input prompt, and the model responds well to direct instructions.',
       },
       editorComponents: ['maximum-completion-length'],
+    },
+    {
+      type: 'structured-data',
+      key: 'structured-data',
+      name: {
+        en_US: 'Structured data',
+      },
+      description: {
+        en_US:
+          "The model will output structured data in a format you specify. The model will be informed of the requested structure automatically in the prompt.\n\n```warn\nAlthough this model was trained to adhere to the provided schema, its output may not always match your requested structure perfectly.\n\nIn our observations, the model's outputs consistently have some structure but sometimes include additional unrequested output or omit requested data (even providing an empty response completely). In your prompt, you should **insist** that the model provide a response.\n```",
+      },
+      editorComponents: ['output-structure'],
     },
   ],
 };

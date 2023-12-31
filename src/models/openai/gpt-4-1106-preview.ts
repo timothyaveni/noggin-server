@@ -1,5 +1,9 @@
+import { JSONSchema7 } from 'json-schema';
 import OpenAI from 'openai';
-import { ChatCompletionMessageParam } from 'openai/resources';
+import {
+  ChatCompletionMessageParam,
+  FunctionParameters,
+} from 'openai/resources';
 import { StreamModelResponse } from '..';
 import { StandardChat } from '../../evaluateParams';
 import {
@@ -15,6 +19,7 @@ type ModelParams = {
   'chat-prompt': StandardChat;
   // 'temperature': number;
   // 'max-tokens': number;
+  'output-structure': JSONSchema7;
 };
 
 type OpenAIChat = ChatCompletionMessageParam[];
@@ -53,76 +58,133 @@ export const streamResponse: StreamModelResponse = async (
     } as ChatCompletionMessageParam); // something is going weird with the TS overload here
   }
 
-  const stream = await openai.chat.completions.create({
-    messages,
-    model: 'gpt-4-1106-preview',
-    // tools: [
-    //   {
-    //     type: 'function',
-    //     function: {
-    //       name: 'respond',
-    //       parameters: {
-    //         type: 'object',
-    //         properties: {
-    //           answer: {
-    //             enum: ['red', 'blue', 'green'],
-    //           },
-    //         },
-    //         required: ['answer'],
-    //       },
-    //     },
-    //   },
-    // ],
-    // tool_choice: {
-    //   type: 'function',
-    //   function: {
-    //     name: 'respond',
-    //   },
-    // },
-    stream: true,
-  });
+  if (chosenOutputFormat.type === 'chat-text') {
+    const stream = await openai.chat.completions.create({
+      messages,
+      model: 'gpt-4-1106-preview',
+      stream: true,
+    });
 
-  let output = '';
+    let output = '';
 
-  for await (const chunk of stream) {
+    for await (const chunk of stream) {
+      writeLogToRunStream(runId, {
+        level: 'debug',
+        stage: 'run_model',
+        message: {
+          type: 'model_chunk',
+          text: 'Model chunk',
+          chunk,
+        },
+      });
+
+      console.log(JSON.stringify(chunk, null, 2));
+
+      const partial = chunk.choices[0]?.delta?.content;
+
+      if (partial) {
+        writeLogToRunStream(runId, {
+          level: 'info',
+          stage: 'run_model',
+          message: {
+            type: 'model_partial_output',
+            text: 'Model partial output',
+            output: partial,
+          },
+        });
+        output += partial;
+        writeIncrementalContentToRunStream(runId, 'text', partial, chunk);
+      }
+    }
+
     writeLogToRunStream(runId, {
-      level: 'debug',
+      level: 'info',
       stage: 'run_model',
       message: {
-        type: 'model_chunk',
-        text: 'Model chunk',
-        chunk,
+        type: 'model_full_output',
+        text: 'Model full output',
+        output,
       },
     });
 
-    console.log(JSON.stringify(chunk, null, 2));
+    succeedRun(runId, 'text', output);
+  } else if (chosenOutputFormat.type === 'structured-data') {
+    const outputStructureSchema = evaluatedModelParams['output-structure'];
 
-    const partial = chunk.choices[0]?.delta?.content;
+    let gptSchema;
+    let needsUnwrap = false;
 
-    if (partial) {
-      writeLogToRunStream(runId, {
-        level: 'info',
-        stage: 'run_model',
-        message: {
-          type: 'model_partial_output',
-          text: 'Model partial output',
-          output: partial,
+    if (outputStructureSchema.type === 'object') {
+      gptSchema = outputStructureSchema;
+    } else {
+      const subSchema = { ...outputStructureSchema };
+      // delete subSchema['$schema'];
+
+      gptSchema = {
+        // $schema: 'http://json-schema.org/draft-07/schema#',
+        type: 'object',
+        properties: {
+          answer: outputStructureSchema,
         },
-      });
-      output += partial;
-      writeIncrementalContentToRunStream(runId, 'text', partial, chunk);
+        required: ['answer'],
+      };
+      needsUnwrap = true;
     }
+
+    console.log(
+      'tools',
+      JSON.stringify(
+        [
+          {
+            type: 'function',
+            function: {
+              name: 'respond',
+              parameters: gptSchema as FunctionParameters,
+            },
+          },
+        ],
+        null,
+        2,
+      ),
+    );
+
+    const result = await openai.chat.completions.create({
+      messages,
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'respond',
+            parameters: gptSchema as FunctionParameters,
+          },
+        },
+      ],
+      tool_choice: {
+        type: 'function',
+        function: {
+          name: 'respond',
+        },
+      },
+      model: 'gpt-4-1106-preview',
+    });
+
+    console.log(JSON.stringify(result, null, 2));
+
+    let output =
+      result.choices[0].message.tool_calls?.[0].function.arguments || '{}';
+
+    if (needsUnwrap) {
+      // TODO: we are parsing here, which is a little weird, since we prefer to avoid doing it -- let the user deal with the fallout of a truncated response -- unless they asked us to. but we have to, to get this working. i stringify again just for consistency
+      const parsed = JSON.parse(output).answer;
+      if (typeof parsed === 'string') {
+        output = parsed; // otherwise it'll have quotes
+      } else {
+        output = JSON.stringify(JSON.parse(output).answer) || '';
+      }
+    }
+
+    writeIncrementalContentToRunStream(runId, 'text', output, result);
+
+    succeedRun(runId, 'text', output);
   }
-
-  writeLogToRunStream(runId, {
-    level: 'info',
-    stage: 'run_model',
-    message: {
-      type: 'model_full_output',
-      text: 'Model full output',
-      output,
-    },
-  });
-
-  succeedRun(runId, 'text', output);
 };
