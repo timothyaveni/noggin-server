@@ -19,7 +19,7 @@ const schema: EditorSchema = {
       },
       description: {
         en_US:
-          'The chat prompt is the main input to the model. It can contain instructions, information, and relevant prior context.\\n\\nTypically, the last item in a prompt is a &ldquo;User&rdquo; section, representing the current query. The model will always respond with an &ldquo;Assistant&rdquo; section.\\n\\nEven if you are not building a chatbot, you can use the chat format to delineate &rdquo;turns&ldquo; taken by the system. &ldquo;User&rdquo; sections do not need to be formatted as natural-language questions.\\n\\nMany of the highest-quality large language models are available only in chat format, so it can be valuable to use chat prompts even if your prompt only ever consists of a single &ldquo;User&rdquo; turn.',
+          'The chat prompt is the main input to the model. It can contain instructions, information, and relevant prior context.\n\nTypically, the last item in a prompt is a &ldquo;User&rdquo; section, representing the current query. The model will always respond with an &ldquo;Assistant&rdquo; section.\n\nEven if you are not building a chatbot, you can use the chat format to delineate &rdquo;turns&ldquo; taken by the system. &ldquo;User&rdquo; sections do not need to be formatted as natural-language questions.\n\nMany of the highest-quality large language models are available only in chat format, so it can be valuable to use chat prompts even if your prompt only ever consists of a single &ldquo;User&rdquo; turn.',
       },
       type: 'chat-text-with-parameters',
       editorHeight: 'primary',
@@ -36,17 +36,54 @@ const schema: EditorSchema = {
       min: 0,
       max: 2,
     },
-    'maximum-completion-length': {
+    'top-p': {
       name: {
-        en_US: 'Maximum response length',
+        en_US: 'Top P',
       },
       description: {
         en_US: '',
       },
+      type: 'number',
+      default: 1,
+      min: 0,
+      max: 1,
+    },
+    'frequency-penalty': {
+      name: {
+        en_US: 'Frequency penalty',
+      },
+      description: {
+        en_US: '',
+      },
+      type: 'number',
+      default: 0,
+      min: -2,
+      max: 2,
+    },
+    'presence-penalty': {
+      name: {
+        en_US: 'Presence penalty',
+      },
+      description: {
+        en_US: '',
+      },
+      type: 'number',
+      default: 0,
+      min: -2,
+      max: 2,
+    },
+    'maximum-completion-length': {
+      name: {
+        en_US: 'Maximum response length (tokens)',
+      },
+      description: {
+        en_US:
+          'How many tokens should the model be permitted to respond? It may respond with fewer tokens, but not more than this number.\n\nEach **token** typically represents a word or subword, averaging about four tokens for every three English words. Some text, like symbol-heavy text or text in other languages, requires on average more tokens per character. This is model-dependent.',
+      },
       type: 'integer',
       default: 512,
       min: 1,
-      max: 16384,
+      max: 4096,
     },
     'output-structure': {
       name: {
@@ -62,12 +99,17 @@ const schema: EditorSchema = {
         type: 'string',
       },
     },
-    // todo: ['stop-sequences', 'top-p', 'frequency-penalty', 'presence-penalty'],
+    // todo: ['stop-sequences'],
   },
 
   modelInputComponents: ['system-prompt', 'chat-prompt'],
 
-  modelParameterComponents: ['temperature'],
+  modelParameterComponents: [
+    'temperature',
+    'top-p',
+    'frequency-penalty',
+    'presence-penalty',
+  ],
 
   outputFormats: [
     {

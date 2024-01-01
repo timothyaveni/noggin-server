@@ -67,7 +67,7 @@ const schema: EditorSchema = {
 
   modelInputComponents: ['system-prompt', 'chat-prompt'],
 
-  modelParameterComponents: ['temperature', 'maximum-completion-length'],
+  modelParameterComponents: ['temperature'],
 
   outputFormats: [
     {
