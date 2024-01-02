@@ -1,4 +1,4 @@
-// import cors from 'cors';
+import cors from 'cors';
 import express from 'express';
 import { WebSocketServer } from 'ws';
 
@@ -13,11 +13,11 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-// app.use(
-//   cors({
-//     allowedHeaders: ['Content-Type', 'Authorization'],
-//   }),
-// );
+app.use(
+  cors({
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }),
+);
 
 // TODO: create a 'failed' runresult when we die, especially before calling the model
 
