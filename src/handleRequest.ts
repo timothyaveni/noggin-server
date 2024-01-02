@@ -312,6 +312,15 @@ const handleRequest = async (req: Request, res: Response) => {
       (format) => format.key === nogginOptions.chosenOutputFormatKey,
     ) || editorSchema.outputFormats[0]; // todo log error if not found
 
+  await prisma.nogginRun.update({
+    where: {
+      id: run.id,
+    },
+    data: {
+      status: 'running',
+    },
+  });
+
   streamResponse(
     evaluatedModelParams,
     chosenOutputFormat,
