@@ -1,7 +1,12 @@
 import axios from 'axios';
 import Replicate from 'replicate';
 import { StreamModelResponse } from '..';
+import { getBucket, minioClient } from '../../object-storage/minio.js';
+import { prisma } from '../../prisma.js';
+import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
 import { failRun, openRunStream, succeedRun } from '../../runStreams.js';
+
+import { v4 as uuidv4 } from 'uuid';
 
 type ModelParams = {
   prompt: string;
@@ -25,8 +30,8 @@ export const streamResponse: StreamModelResponse = async (
     'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b';
   const input = {
     prompt: evaluatedModelParams.prompt,
-    width: 512,
-    height: 512,
+    width: 1024,
+    height: 1024,
   };
 
   let output: string[];
@@ -40,9 +45,42 @@ export const streamResponse: StreamModelResponse = async (
     return;
   }
 
+  // todo log
+
+  // todo -- we can stream this straight to object storage, we don't need to buffer it all in server memory first
+
   // get the PNG from the replicate CDN
   const png = await axios.get(output[0], {
     responseType: 'arraybuffer',
+  });
+
+  // todo log
+
+  const buffer = Buffer.from(png.data, 'binary');
+
+  // todo exiftool!
+
+  // todo extract
+  const outputAssetUuid = uuidv4();
+  const outputAssetFilename = `${outputAssetUuid}.png`;
+
+  await minioClient.putObject(
+    await getBucket(ReagentBucket.NOGGIN_RUN_OUTPUTS),
+    outputAssetFilename,
+    buffer,
+    {
+      'Content-Type': 'image/png',
+    },
+  );
+
+  const { url } = await prisma.nogginOutputAssetObject.create({
+    data: {
+      uuid: outputAssetUuid,
+      filename: outputAssetFilename,
+      nogginRunId: runId,
+      mimeType: 'image/png',
+      url: `${process.env.OBJECT_STORAGE_EXTERNAL_URL}/noggin-run-outputs/${outputAssetFilename}`,
+    },
   });
 
   // write the PNG from the replicate API to the express response
@@ -52,5 +90,5 @@ export const streamResponse: StreamModelResponse = async (
   });
 
   // TODO same as other
-  succeedRun(runId, 'assetUrl', output[0]);
+  succeedRun(runId, 'assetUrl', url);
 };
