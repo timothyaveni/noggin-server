@@ -32,6 +32,7 @@ export const streamResponse: StreamModelResponse = async (
     prompt: evaluatedModelParams.prompt,
     width: 1024,
     height: 1024,
+    num_inference_steps: 50,
   };
 
   let output: string[];

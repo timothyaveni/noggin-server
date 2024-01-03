@@ -3,6 +3,11 @@ import Replicate from 'replicate';
 import { StreamModelResponse } from '..';
 import { failRun, openRunStream, succeedRun } from '../../runStreams.js';
 
+import { v4 as uuidv4 } from 'uuid';
+import { getBucket, minioClient } from '../../object-storage/minio.js';
+import { prisma } from '../../prisma.js';
+import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
+
 type ModelParams = {
   prompt: string;
 };
@@ -56,6 +61,33 @@ export const streamResponse: StreamModelResponse = async (
     responseType: 'arraybuffer',
   });
 
+  const buffer = Buffer.from(png.data, 'binary');
+
+  // todo exiftool!
+
+  // todo extract
+  const outputAssetUuid = uuidv4();
+  const outputAssetFilename = `${outputAssetUuid}.png`;
+
+  await minioClient.putObject(
+    await getBucket(ReagentBucket.NOGGIN_RUN_OUTPUTS),
+    outputAssetFilename,
+    buffer,
+    {
+      'Content-Type': 'image/png',
+    },
+  );
+
+  const { url } = await prisma.nogginOutputAssetObject.create({
+    data: {
+      uuid: outputAssetUuid,
+      filename: outputAssetFilename,
+      nogginRunId: runId,
+      mimeType: 'image/png',
+      url: `${process.env.OBJECT_STORAGE_EXTERNAL_URL}/noggin-run-outputs/${outputAssetFilename}`,
+    },
+  });
+
   // write the PNG from the replicate API to the express response
   openRunStream(runId, {
     // 'Content-Type': 'image/png',
@@ -64,5 +96,5 @@ export const streamResponse: StreamModelResponse = async (
 
   // todo: reupload and shim (and exif data!) the image
   // todo: probably for now we'll upload and then have an abstraction that redownloads the asset -- this is a little silly but we could use a cache to make it work fine, and it's probably worth it to simplify the abstraction
-  succeedRun(runId, 'assetUrl', output[0]);
+  succeedRun(runId, 'assetUrl', url);
 };
