@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import { emptyPNGUrl, imageUrlToBase64 } from './imageUtils.js';
+import { emptyPNGUrl } from './imageUtils.js';
 
 // TODO: synced from store.tsx -- probably extract this to shared code
 type DocumentBaseParameter = {
@@ -48,14 +48,25 @@ export const createRequestParameters = async (
         }
         break;
       case 'image':
+        console.log({
+          parameterKey,
+          parameter,
+          bodyValue,
+          queryValue,
+          rq: req.query,
+          // @ts-expect-error
+          rb: req.nogginBody,
+        });
         if (bodyValue) {
-          parameters[parameterKey] = await imageUrlToBase64(
-            bodyValue.toString(),
-          );
+          // parameters[parameterKey] = await imageUrlToBase64(
+          //   bodyValue.toString(),
+          // );
+          parameters[parameterKey] = bodyValue.toString();
         } else if (queryValue) {
-          parameters[parameterKey] = await imageUrlToBase64(
-            queryValue.toString(),
-          );
+          // parameters[parameterKey] = await imageUrlToBase64(
+          //   queryValue.toString(),
+          // );
+          parameters[parameterKey] = queryValue.toString();
         } else {
           console.warn('no image provided for parameter', parameterKey);
           parameters[parameterKey] = emptyPNGUrl();

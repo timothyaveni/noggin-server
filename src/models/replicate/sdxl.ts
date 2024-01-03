@@ -1,7 +1,11 @@
 import axios from 'axios';
 import Replicate from 'replicate';
 import { StreamModelResponse } from '..';
-import { getBucket, minioClient } from '../../object-storage/minio.js';
+import {
+  getBucket,
+  getExternalUrlForBucket,
+  minioClient,
+} from '../../object-storage/minio.js';
 import { prisma } from '../../prisma.js';
 import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
 import { failRun, openRunStream, succeedRun } from '../../runStreams.js';
@@ -80,7 +84,9 @@ export const streamResponse: StreamModelResponse = async (
       filename: outputAssetFilename,
       nogginRunId: runId,
       mimeType: 'image/png',
-      url: `${process.env.OBJECT_STORAGE_EXTERNAL_URL}/noggin-run-outputs/${outputAssetFilename}`,
+      url: `${getExternalUrlForBucket(
+        ReagentBucket.NOGGIN_RUN_OUTPUTS,
+      )}/${outputAssetFilename}`,
     },
   });
 

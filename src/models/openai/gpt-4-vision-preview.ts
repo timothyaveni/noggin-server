@@ -52,7 +52,7 @@ export const streamResponse: StreamModelResponse = async (
     } as ChatCompletionMessageParam); // something is going weird with the TS overload here
   }
 
-  console.log(messages);
+  console.log(JSON.stringify(messages));
 
   const stream = await openai.chat.completions.create({
     messages,

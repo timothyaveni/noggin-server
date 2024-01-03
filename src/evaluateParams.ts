@@ -109,7 +109,7 @@ export const evaluateParamsInChatText = (
                 type: 'image_url',
                 image_url: {
                   url: parameters[chunk.parameterId] || '', // TODO: not sure i'm digging the return type of 'parameters'. also, the empty string should trigger a warning
-                  openAI_detail: 'high', // yeah that's not gonna work
+                  openAI_detail: 'low', // yeah that's not gonna work
                 },
               });
               break;

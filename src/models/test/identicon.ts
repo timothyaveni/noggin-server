@@ -5,7 +5,11 @@ import { openRunStream, succeedRun } from '../../runStreams.js';
 import { createHash } from 'crypto';
 
 import { v4 as uuidv4 } from 'uuid';
-import { getBucket, minioClient } from '../../object-storage/minio.js';
+import {
+  getBucket,
+  getExternalUrlForBucket,
+  minioClient,
+} from '../../object-storage/minio.js';
 import { prisma } from '../../prisma.js';
 import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
 
@@ -55,7 +59,9 @@ export const streamResponse: StreamModelResponse = async (
       filename: outputAssetFilename,
       nogginRunId: runId,
       mimeType: 'image/png',
-      url: `${process.env.OBJECT_STORAGE_EXTERNAL_URL}/noggin-run-outputs/${outputAssetFilename}`,
+      url: `${getExternalUrlForBucket(
+        ReagentBucket.NOGGIN_RUN_OUTPUTS,
+      )}/${outputAssetFilename}`,
     },
   });
 
