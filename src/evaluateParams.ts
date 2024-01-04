@@ -27,20 +27,10 @@ export const evaluateParamsInModelInputs = (
         );
         break;
       case 'integer':
-        // TODO
-        console.log(inputKey, modelInputs[inputKey]);
-        break;
       case 'number':
-        // TODO
-        console.log(inputKey, modelInputs[inputKey]);
-        break;
       case 'boolean':
-        // TODO
-        console.log(inputKey, modelInputs[inputKey]);
-        break;
       case 'select':
-        // TODO
-        console.log(inputKey, modelInputs[inputKey]);
+        newModelInputs[inputKey] = modelInputs[inputKey]; // no params just yet
         break;
       case 'simple-schema':
         newModelInputs[inputKey] = modelInputs[inputKey]; // no params just yet

@@ -26,20 +26,10 @@ export const parseModelInputs = (
         );
         break;
       case 'integer':
-        // TODO
-        console.log(inputKey, modelInputsMap.get(inputKey));
-        break;
       case 'number':
-        // TODO
-        console.log(inputKey, modelInputsMap.get(inputKey));
-        break;
       case 'boolean':
-        // TODO
-        console.log(inputKey, modelInputsMap.get(inputKey));
-        break;
       case 'select':
-        // TODO
-        console.log(inputKey, modelInputsMap.get(inputKey));
+        parsedInputs[inputKey] = modelInputsMap.get(inputKey);
         break;
       case 'simple-schema':
         parsedInputs[inputKey] = modelInputsMap.get(inputKey);

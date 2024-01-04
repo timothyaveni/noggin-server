@@ -1,6 +1,7 @@
 import { JSONSchema7 } from 'json-schema';
 import OpenAI from 'openai';
 import {
+  ChatCompletionCreateParams,
   ChatCompletionMessageParam,
   FunctionParameters,
 } from 'openai/resources';
@@ -17,8 +18,11 @@ import { createOpenAIMultimodalContent } from './createOpenAIMultimodalContent.j
 type ModelParams = {
   'system-prompt': string;
   'chat-prompt': StandardChat;
-  // 'temperature': number;
-  // 'max-tokens': number;
+  temperature: number;
+  'top-p': number;
+  'frequency-penalty': number;
+  'presence-penalty': number;
+  'maximum-completion-length': number;
   'output-structure': JSONSchema7;
 };
 
@@ -58,10 +62,21 @@ export const streamResponse: StreamModelResponse = async (
     } as ChatCompletionMessageParam); // something is going weird with the TS overload here
   }
 
+  const modelParams: ChatCompletionCreateParams = {
+    messages,
+    model: 'gpt-3.5-turbo-1106',
+    frequency_penalty: evaluatedModelParams['frequency-penalty'],
+    presence_penalty: evaluatedModelParams['presence-penalty'],
+    max_tokens: evaluatedModelParams['maximum-completion-length'],
+    temperature: evaluatedModelParams['temperature'],
+    top_p: evaluatedModelParams['top-p'],
+  };
+
+  console.log(JSON.stringify(modelParams, null, 2));
+
   if (chosenOutputFormat.type === 'chat-text') {
     const stream = await openai.chat.completions.create({
-      messages,
-      model: 'gpt-3.5-turbo-1106',
+      ...modelParams,
       stream: true,
     });
 
@@ -148,7 +163,7 @@ export const streamResponse: StreamModelResponse = async (
     );
 
     const result = await openai.chat.completions.create({
-      messages,
+      ...modelParams,
       tools: [
         {
           type: 'function',
@@ -164,7 +179,6 @@ export const streamResponse: StreamModelResponse = async (
           name: 'respond',
         },
       },
-      model: 'gpt-3.5-turbo-1106',
     });
 
     console.log(JSON.stringify(result, null, 2));
