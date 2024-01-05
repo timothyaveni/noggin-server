@@ -5,7 +5,8 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "dev": "tsc-watch --preserveWatchOutput --onSuccess \"node dist/server.js\""
+    "dev": "tsc-watch --preserveWatchOutput --onSuccess \"node dist/server.js\"",
+    "build": "tsc"
   },
   "prisma": {
     "schema": "/app/prisma/schema.prisma"
