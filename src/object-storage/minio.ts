@@ -19,18 +19,6 @@ export const getBucket = async (bucketName: ReagentBucket): Promise<string> => {
   return bucketName;
 };
 
-const getExternalUrl = () => {
-  const protocol =
-    process.env.OBJECT_STORAGE_EXTERNAL_USE_SSL === 'true' ? 'https' : 'http';
-  const port =
-    (protocol === 'http' &&
-      process.env.OBJECT_STORAGE_EXTERNAL_PORT === '80') ||
-    (protocol === 'https' && process.env.OBJECT_STORAGE_EXTERNAL_PORT === '443')
-      ? ''
-      : `:${process.env.OBJECT_STORAGE_EXTERNAL_PORT}`;
-  return `${protocol}://${process.env.OBJECT_STORAGE_EXTERNAL_HOST}${port}`;
-};
-
 export const getExternalUrlForBucket = (bucketName: ReagentBucket): string => {
-  return `${getExternalUrl()}/${bucketName}`;
+  return `${process.env.OBJECT_STORAGE_EXTERNAL_URL}/${bucketName}`;
 };
