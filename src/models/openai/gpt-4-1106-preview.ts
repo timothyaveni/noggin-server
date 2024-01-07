@@ -183,8 +183,6 @@ export const streamResponse: StreamModelResponse = async (
       }
     }
 
-    writeIncrementalContentToRunStream(runId, 'text', output, result);
-
-    succeedRun(runId, 'text', output);
+    succeedRun(runId, 'text', output, result);
   }
 };
