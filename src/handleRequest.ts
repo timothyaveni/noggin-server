@@ -4,7 +4,7 @@ import { v4 as uuid } from 'uuid';
 import * as Y from 'yjs';
 
 import { createRequestParameters } from './createRequestParameters.js';
-import { evaluateParamsInModelInputs } from './evaluateParams.js';
+import { evaluateVariablesInModelInputs } from './evaluateVariables.js';
 import { getProviderCredentialsForNoggin_OMNISCIENT } from './getCredentials.js';
 import inferIntent from './inferIntent.js';
 import inferNogginAPIKey from './inferNogginAPIKey.js';
@@ -230,7 +230,10 @@ const handleRequest = async (req: Request, res: Response) => {
   );
   // TODO allow overrides too, i guess
 
-  const evaluatedModelParams = evaluateParamsInModelInputs(
+  const {
+    partialEvaluated: partialEvaluatedModelInputs,
+    evaluated: evaluatedModelParams,
+  } = evaluateVariablesInModelInputs(
     parsedModelInputs,
     editorSchema,
     documentParameters,
@@ -324,6 +327,7 @@ const handleRequest = async (req: Request, res: Response) => {
   streamResponse(
     {
       unevaluated: parsedModelInputs,
+      partialEvaluated: partialEvaluatedModelInputs,
       evaluated: evaluatedModelParams,
     },
     chosenOutputFormat,

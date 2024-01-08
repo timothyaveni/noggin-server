@@ -1,4 +1,5 @@
 import { JSONSchema7 } from 'json-schema';
+import { VariableEvaluation } from '../../evaluateVariables';
 
 export type I18nString = {
   en_US: string;
@@ -20,6 +21,7 @@ type TextOrVariable =
   | {
       type: 'parameter';
       parameterId: string;
+      evaluated?: VariableEvaluation;
     };
 
 export type ModelInput_PlainTextWithVariables_Value = TextOrVariable[];

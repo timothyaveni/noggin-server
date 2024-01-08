@@ -16,12 +16,32 @@ import {
   EvaluatedStandardChat,
 } from './reagent-noggin-shared/types/evaluated-variables';
 
-export const evaluateParamsInModelInputs = (
+export type VariableEvaluation =
+  | {
+      variableType: 'text';
+      variableName: string;
+      variableValue: {
+        text: string;
+      };
+    }
+  | {
+      variableType: 'image';
+      variableName: string;
+      variableValue: {
+        url: string;
+        openAI_detail?: 'low' | 'high' | 'auto';
+      };
+    };
+
+export const evaluateVariablesInModelInputs = (
   modelInputs: Record<string, ModelInput_Value>,
   editorSchema: EditorSchema,
   documentParameters: any,
   parameters: any,
 ) => {
+  const partialEvaluatedModelInputs = JSON.parse(
+    JSON.stringify(modelInputs),
+  ) as typeof modelInputs; // todo of course. just rather not do the whole thing immutable
   const evaluatedModelInputs: EvaluatedModelInputs<typeof modelInputs> = {};
 
   for (const inputKey of Object.keys(editorSchema.allEditorComponents)) {
@@ -30,43 +50,51 @@ export const evaluateParamsInModelInputs = (
     switch (input.type) {
       case 'chat-text-user-images-with-parameters':
       case 'chat-text-with-parameters':
-        thisModelInputValue = modelInputs[
+        thisModelInputValue = partialEvaluatedModelInputs[
           inputKey
         ] as ModelInput_StandardChatWithVariables_Value;
-        evaluatedModelInputs[inputKey] = evaluateParamsInChatText(
+        evaluatedModelInputs[inputKey] = evaluateVariablesInChatText(
           thisModelInputValue,
           documentParameters,
           parameters,
         );
         break;
       case 'plain-text-with-parameters':
-        thisModelInputValue = modelInputs[
+        thisModelInputValue = partialEvaluatedModelInputs[
           inputKey
         ] as ModelInput_PlainTextWithVariables_Value;
-        evaluatedModelInputs[inputKey] = evaluateParamsInPlainText(
+        evaluatedModelInputs[inputKey] = evaluateVariablesInPlainText(
           thisModelInputValue,
           documentParameters,
           parameters,
         );
         break;
       case 'integer':
-        thisModelInputValue = modelInputs[inputKey] as ModelInput_Integer_Value;
+        thisModelInputValue = partialEvaluatedModelInputs[
+          inputKey
+        ] as ModelInput_Integer_Value;
         evaluatedModelInputs[inputKey] = thisModelInputValue; // no params just yet
         break;
       case 'number':
-        thisModelInputValue = modelInputs[inputKey] as ModelInput_Number_Value;
+        thisModelInputValue = partialEvaluatedModelInputs[
+          inputKey
+        ] as ModelInput_Number_Value;
         evaluatedModelInputs[inputKey] = thisModelInputValue; // no params just yet
         break;
       case 'boolean':
-        thisModelInputValue = modelInputs[inputKey] as ModelInput_Boolean_Value;
+        thisModelInputValue = partialEvaluatedModelInputs[
+          inputKey
+        ] as ModelInput_Boolean_Value;
         evaluatedModelInputs[inputKey] = thisModelInputValue; // no params just yet
         break;
       case 'select':
-        thisModelInputValue = modelInputs[inputKey] as ModelInput_Select_Value;
+        thisModelInputValue = partialEvaluatedModelInputs[
+          inputKey
+        ] as ModelInput_Select_Value;
         evaluatedModelInputs[inputKey] = thisModelInputValue; // no params just yet
         break;
       case 'simple-schema':
-        thisModelInputValue = modelInputs[
+        thisModelInputValue = partialEvaluatedModelInputs[
           inputKey
         ] as ModelInput_SimpleSchema_Value;
         evaluatedModelInputs[inputKey] = thisModelInputValue; // no params just yet
@@ -76,10 +104,13 @@ export const evaluateParamsInModelInputs = (
     }
   }
 
-  return evaluatedModelInputs;
+  return {
+    partialEvaluated: partialEvaluatedModelInputs,
+    evaluated: evaluatedModelInputs,
+  };
 };
 
-export const evaluateParamsInChatText = (
+export const evaluateVariablesInChatText = (
   chatText: ModelInput_StandardChatWithVariables_Value,
   documentParameters: any,
   parameters: any,
@@ -104,20 +135,37 @@ export const evaluateParamsInChatText = (
 
           switch (parameterType) {
             case 'text':
+              const textEvaluatedValue =
+                parameters[chunk.parameterId] ||
+                documentParameters[chunk.parameterId].defaultValue;
+              chunk.evaluated = {
+                variableType: 'text',
+                variableName: documentParameters[chunk.parameterId].name,
+                variableValue: {
+                  text: textEvaluatedValue,
+                },
+              };
               contentChunks.push({
                 type: 'text',
-                text:
-                  parameters[chunk.parameterId] ||
-                  documentParameters[chunk.parameterId].defaultValue,
+                text: textEvaluatedValue,
               });
               break;
             case 'image':
+              const imageEvaluatedValue: {
+                url: string;
+                openAI_detail: 'low' | 'high' | 'auto';
+              } = {
+                url: parameters[chunk.parameterId] || '', // TODO: not sure i'm digging the return type of 'parameters'. also, the empty string should trigger a warning
+                openAI_detail: 'low', // yeah that's not gonna work
+              };
+              chunk.evaluated = {
+                variableType: 'image',
+                variableName: documentParameters[chunk.parameterId].name,
+                variableValue: imageEvaluatedValue,
+              };
               contentChunks.push({
                 type: 'image_url',
-                image_url: {
-                  url: parameters[chunk.parameterId] || '', // TODO: not sure i'm digging the return type of 'parameters'. also, the empty string should trigger a warning
-                  openAI_detail: 'low', // yeah that's not gonna work
-                },
+                image_url: imageEvaluatedValue,
               });
               break;
             default:
@@ -142,7 +190,7 @@ export const evaluateParamsInChatText = (
 };
 
 // TODO: dry it out
-export const evaluateParamsInPlainText = (
+export const evaluateVariablesInPlainText = (
   plainText: ModelInput_PlainTextWithVariables_Value,
   documentParameters: any,
   parameters: any,
@@ -156,9 +204,17 @@ export const evaluateParamsInPlainText = (
         newPlainText += chunk.text;
         break;
       case 'parameter':
-        newPlainText +=
+        const textEvaluatedValue =
           parameters[chunk.parameterId] ||
           documentParameters[chunk.parameterId].defaultValue;
+        chunk.evaluated = {
+          variableType: 'text',
+          variableName: documentParameters[chunk.parameterId].name,
+          variableValue: {
+            text: textEvaluatedValue,
+          },
+        };
+        newPlainText += textEvaluatedValue;
         break;
       default:
         // @ts-expect-error this could still happen at runtime, since it's i/o

@@ -1,9 +1,15 @@
 import axios from 'axios';
 import Replicate from 'replicate';
 import { StreamModelResponse } from '..';
-import { failRun, openRunStream, succeedRun } from '../../runStreams.js';
+import {
+  failRun,
+  openRunStream,
+  setIOVisualizationRenderForRunStream,
+  succeedRun,
+} from '../../runStreams.js';
 
 import { v4 as uuidv4 } from 'uuid';
+import { createIOVisualizationForImageOutputModel } from '../../createIOVisualization.js';
 import {
   getBucket,
   getExternalUrlForBucket,
@@ -28,6 +34,12 @@ export const streamResponse: StreamModelResponse = async (
   },
   { sendStatus },
 ) => {
+  const ioVisualization = createIOVisualizationForImageOutputModel(
+    modelParams.partialEvaluated.prompt,
+  );
+
+  await setIOVisualizationRenderForRunStream(runId, ioVisualization);
+
   const replicate = new Replicate({
     auth: providerCredentials.credentials.apiToken,
   });

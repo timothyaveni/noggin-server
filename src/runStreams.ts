@@ -2,6 +2,7 @@
 
 import { LogArgs } from './log';
 import { prisma } from './prisma.js';
+import { IOVisualizationRender } from './reagent-noggin-shared/io-visualization-types/IOVisualizationRender';
 
 // TODO probably curry all of these to the runId. and rename, since they're less 'stream'y now that they also do the db writes
 
@@ -17,6 +18,7 @@ enum RunState {
 
 type RunStream = {
   // streamMimeType: RunStreamMimeType;
+  setIOVisualization: (ioVisualization: IOVisualizationRender) => any;
   appendText: (text: string, metadata: any) => any;
   finalizeText: (text: string, metadata: any) => any;
   finalizeAsset: (assetUrl: string, metadata: any) => any;
@@ -43,12 +45,17 @@ type RunStream = {
 //       delta: Buffer;
 //     };
 
-type StreamOutputChunk = {
-  stage: 'incremental' | 'final';
-  contentType: 'text' | 'assetUrl' | 'error';
-  content: string;
-  metadata: any;
-};
+type StreamOutputChunk =
+  | {
+      stage: 'incremental' | 'final';
+      contentType: 'text' | 'assetUrl' | 'error';
+      content: string;
+      metadata: any;
+    }
+  | {
+      stage: 'io-visualization';
+      content: IOVisualizationRender;
+    };
 
 // TODO these gonna leak memory, fix that
 const streamOutputContent: {
@@ -92,6 +99,7 @@ export const registerStream = (
 ) => {
   const stream = {
     // streamMimeType: streamOptions.streamMimeType,
+    setIOVisualization: streamOptions.setIOVisualization || (() => {}),
     appendText: streamOptions.appendText || (() => {}),
     finalizeText: streamOptions.finalizeText || (() => {}),
     finalizeAsset: streamOptions.finalizeAsset || (() => {}),
@@ -128,7 +136,9 @@ const flushStreamOutput = (runId: number, stream: RunStream) => {
     const chunk = chunks[i];
 
     // todo i'm not sure about this abstraction anymore ... should we just be passing the chunk through
-    if (chunk.stage === 'incremental') {
+    if (chunk.stage === 'io-visualization') {
+      stream.setIOVisualization(chunk.content);
+    } else if (chunk.stage === 'incremental') {
       stream.appendText(chunk.content, chunk.metadata);
     } else if (chunk.stage === 'final') {
       if (chunk.contentType === 'text') {
@@ -335,6 +345,31 @@ export const openRunStream = (
   }
 
   runStreamStates[runId] = RunState.OPEN;
+
+  flushAllStreamsForRun(runId);
+};
+
+export const setIOVisualizationRenderForRunStream = async (
+  runId: number,
+  ioVisualizationRender: IOVisualizationRender,
+) => {
+  // todo shouldn't need to await this
+  await prisma.nogginRun.update({
+    where: {
+      id: runId,
+    },
+    data: {
+      // @ts-ignore weirdness converting to json type
+      ioVisualizationRender,
+    },
+  });
+
+  const chunks = outputChunksForRun(runId);
+
+  chunks.push({
+    stage: 'io-visualization',
+    content: ioVisualizationRender,
+  });
 
   flushAllStreamsForRun(runId);
 };

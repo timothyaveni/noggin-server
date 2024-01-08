@@ -171,6 +171,14 @@ wss.on('connection', async (ws: WebSocket, req: Request) => {
         }),
       );
     },
+    setIOVisualization: (ioVisualization) => {
+      ws.send(
+        JSON.stringify({
+          type: 'set io visualization',
+          ioVisualization,
+        }),
+      );
+    },
     appendText: (text, metadata) => {
       ws.send(
         JSON.stringify({

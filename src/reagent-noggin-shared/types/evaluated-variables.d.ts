@@ -26,6 +26,7 @@ type EvaluatedChatTurn = {
   speaker: 'user' | 'assistant';
   content: EvaluatedContentChunk[];
 };
+
 export type EvaluatedStandardChat = EvaluatedChatTurn[];
 
 type EvaluatedModelInput_Value<T extends ModelInput_Value> =
@@ -53,5 +54,6 @@ export type ModelParamsForStreamResponse<
   T extends Record<string, ModelInput_Value>,
 > = {
   unevaluated: T;
+  partialEvaluated: T; // todo is there a way we can make 'evaluated' non-optional here, and optional above? i don't want to duplicate all the type defs...
   evaluated: EvaluatedModelInputs<T>;
 };

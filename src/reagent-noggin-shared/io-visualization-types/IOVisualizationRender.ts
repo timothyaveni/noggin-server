@@ -1,44 +1,42 @@
-type IOVisualizationElementBase = {
-  type: string;
-};
+import { I18nString } from '../types/editorSchemaV1';
 
-type IOVisualizationParameterEvaluationNote = {
+type IOVisualizationVariableEvaluationNote = {
   noteMarkdown: string;
   noteSeverity: 'info' | 'warning' | 'error';
 };
 
-type IOVisualizationHyperTextElement_Text = {
+export type IOVisualizationHyperTextElement_Text = {
   type: 'text';
 
   text: string;
 };
 
-type IOVisualizationHyperTextElement_EvaluatedParameter = {
-  type: 'parameter';
+export type IOVisualizationHyperTextElement_EvaluatedVariable = {
+  type: 'variable';
 
-  parameterName: string;
-  parameterEvaluatedValue:
+  variableName: string;
+  variableEvaluatedValue:
     | IOVisualizationHyperTextElement_Text
     | IOVisualizationHyperTextElement_Asset; // hm, should this be a separate abstraction?
-  parameterEvaluationNotes: IOVisualizationParameterEvaluationNote[];
+  variableEvaluationNotes: IOVisualizationVariableEvaluationNote[];
 };
 
-type AssetBase = {
+export type AssetBase = {
   url: string;
   mimeType: 'image/png' | 'image/jpeg' | 'application/octet-stream';
   altText?: string;
 };
 
-interface IOVisualizationHyperTextElement_Asset extends AssetBase {
+export interface IOVisualizationHyperTextElement_Asset extends AssetBase {
   type: 'asset';
 }
 
-type IOVisualizationHyperTextElement =
+export type IOVisualizationHyperTextElement =
   | IOVisualizationHyperTextElement_Text
-  | IOVisualizationHyperTextElement_EvaluatedParameter
+  | IOVisualizationHyperTextElement_EvaluatedVariable
   | IOVisualizationHyperTextElement_Asset;
 
-type IOVisualizationElement_HyperText = {
+export type IOVisualizationElement_HyperText = {
   type: 'hypertext';
   children: IOVisualizationHyperTextElement[];
 };
@@ -51,22 +49,36 @@ type IOVisualizationElement_ResponseVoid = {
   type: 'response void';
 };
 
-type IOVisualizationElement =
+export type IOVisualizationElement =
   | IOVisualizationElement_HyperText
   | IOVisualizationElement_Asset
   | IOVisualizationElement_ResponseVoid;
 
-type IOVisualizationChatTextTurn = {
+export type IOVisualizationChatTextTurn = {
   speaker: 'user' | 'assistant';
   content: IOVisualizationElement[];
 };
 
-type IOVisualizationComponent_ChatText = {
+export type IOVisualizationComponent_ChatText = {
   type: 'chat text';
   turns: IOVisualizationChatTextTurn[];
 };
 
-type IOVisualizationTopLevelComponent = IOVisualizationComponent_ChatText;
+export type IOVisualizationComponent_RawElement = {
+  type: 'raw element';
+  content: IOVisualizationElement[];
+};
+
+export type IOVisualizationComponent_ElementWithTitle = {
+  type: 'element with title';
+  title: I18nString;
+  content: IOVisualizationElement[];
+};
+
+export type IOVisualizationTopLevelComponent =
+  | IOVisualizationComponent_ChatText
+  | IOVisualizationComponent_RawElement
+  | IOVisualizationComponent_ElementWithTitle;
 
 type IOVisualizationRenderV1Payload = {
   primaryView: IOVisualizationTopLevelComponent[];

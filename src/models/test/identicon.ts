@@ -1,10 +1,15 @@
 import Identicon from 'identicon.js';
 import { StreamModelResponse } from '..';
-import { openRunStream, succeedRun } from '../../runStreams.js';
+import {
+  openRunStream,
+  setIOVisualizationRenderForRunStream,
+  succeedRun,
+} from '../../runStreams.js';
 
 import { createHash } from 'crypto';
 
 import { v4 as uuidv4 } from 'uuid';
+import { createIOVisualizationForImageOutputModel } from '../../createIOVisualization.js';
 import {
   getBucket,
   getExternalUrlForBucket,
@@ -29,6 +34,12 @@ export const streamResponse: StreamModelResponse = async (
   },
   { sendStatus },
 ) => {
+  const ioVisualization = createIOVisualizationForImageOutputModel(
+    modelParams.partialEvaluated.prompt,
+  );
+
+  await setIOVisualizationRenderForRunStream(runId, ioVisualization);
+
   const sha1 = createHash('sha1');
   sha1.update(modelParams.evaluated.prompt);
   const hash = sha1.digest('hex');

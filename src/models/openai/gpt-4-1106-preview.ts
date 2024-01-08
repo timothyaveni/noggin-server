@@ -4,6 +4,7 @@ import {
   FunctionParameters,
 } from 'openai/resources';
 import { StreamModelResponse } from '..';
+import { createIOVisualizationForChatTextModel } from '../../createIOVisualization.js';
 import {
   ModelInput_PlainTextWithVariables_Value,
   ModelInput_SimpleSchema_Value,
@@ -12,6 +13,7 @@ import {
 import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables';
 import {
   openRunStream,
+  setIOVisualizationRenderForRunStream,
   succeedRun,
   writeIncrementalContentToRunStream,
   writeLogToRunStream,
@@ -35,6 +37,12 @@ export const streamResponse: StreamModelResponse = async (
     credentials: { apiKey: string };
   },
 ) => {
+  const ioVisualizationRender = createIOVisualizationForChatTextModel(
+    modelParams.partialEvaluated['chat-prompt'],
+  );
+
+  await setIOVisualizationRenderForRunStream(runId, ioVisualizationRender);
+
   // TODO: probably extract these into a function
   openRunStream(runId, {
     'Content-Type': 'text/html; charset=utf-8',

@@ -8,9 +8,15 @@ import {
 } from '../../object-storage/minio.js';
 import { prisma } from '../../prisma.js';
 import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
-import { failRun, openRunStream, succeedRun } from '../../runStreams.js';
+import {
+  failRun,
+  openRunStream,
+  setIOVisualizationRenderForRunStream,
+  succeedRun,
+} from '../../runStreams.js';
 
 import { v4 as uuidv4 } from 'uuid';
+import { createIOVisualizationForImageOutputModel } from '../../createIOVisualization.js';
 import { ModelInput_PlainTextWithVariables_Value } from '../../reagent-noggin-shared/types/editorSchemaV1';
 import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables';
 
@@ -28,6 +34,12 @@ export const streamResponse: StreamModelResponse = async (
   },
   { sendStatus },
 ) => {
+  const ioVisualization = createIOVisualizationForImageOutputModel(
+    modelParams.partialEvaluated.prompt,
+  );
+
+  await setIOVisualizationRenderForRunStream(runId, ioVisualization);
+
   const replicate = new Replicate({
     auth: providerCredentials.credentials.apiToken,
   });
