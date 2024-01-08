@@ -1,5 +1,4 @@
 import { JSONSchema7 } from 'json-schema';
-import { VariableEvaluation } from '../../evaluateVariables';
 
 export type I18nString = {
   en_US: string;
@@ -12,6 +11,23 @@ type ModelInputBase = {
 };
 
 type EditorHeight = 'primary' | 'default';
+
+export type VariableEvaluation =
+  | {
+      variableType: 'text';
+      variableName: string;
+      variableValue: {
+        text: string;
+      };
+    }
+  | {
+      variableType: 'image';
+      variableName: string;
+      variableValue: {
+        url: string;
+        openAI_detail?: 'low' | 'high' | 'auto';
+      };
+    };
 
 type TextOrVariable =
   | {

@@ -16,23 +16,6 @@ import {
   EvaluatedStandardChat,
 } from './reagent-noggin-shared/types/evaluated-variables';
 
-export type VariableEvaluation =
-  | {
-      variableType: 'text';
-      variableName: string;
-      variableValue: {
-        text: string;
-      };
-    }
-  | {
-      variableType: 'image';
-      variableName: string;
-      variableValue: {
-        url: string;
-        openAI_detail?: 'low' | 'high' | 'auto';
-      };
-    };
-
 export const evaluateVariablesInModelInputs = (
   modelInputs: Record<string, ModelInput_Value>,
   editorSchema: EditorSchema,
