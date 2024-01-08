@@ -32,7 +32,7 @@ const schema: EditorSchema = {
       type: 'integer',
       default: 1024,
       min: 1,
-      max: 4096,
+      max: 1024,
     },
     height: {
       name: {
@@ -41,16 +41,30 @@ const schema: EditorSchema = {
       description: {
         en_US: 'Height of the generated image',
       },
-      type: 'number',
+      type: 'integer',
       default: 1024,
       min: 1,
-      max: 4096,
+      max: 1024,
+    },
+
+    'inference-steps': {
+      name: {
+        en_US: 'Inference steps',
+      },
+      description: {
+        en_US:
+          'Number of "denoising" steps in the diffusion process. 50 is a common starting point. Cost is approximately proportional to this value.',
+      },
+      type: 'integer',
+      default: 50,
+      min: 1,
+      max: 500,
     },
   },
 
   modelInputComponents: ['prompt', 'negative-prompt'],
 
-  modelParameterComponents: [],
+  modelParameterComponents: ['inference-steps'],
 
   outputFormats: [
     {

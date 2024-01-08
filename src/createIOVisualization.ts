@@ -93,6 +93,11 @@ export const createIOVisualizationForImageOutputModel = (
   prompt: ModelInput_PlainTextWithVariables_Value,
   negativePrompt?: ModelInput_PlainTextWithVariables_Value,
 ): IOVisualizationRender => {
+  const hasNegativePrompt =
+    negativePrompt !== undefined &&
+    negativePrompt.length > 0 &&
+    !(negativePrompt[0].type === 'text' && negativePrompt[0].text === '');
+
   return {
     version: '1',
     payload: {
@@ -104,7 +109,7 @@ export const createIOVisualizationForImageOutputModel = (
           },
           content: [createHypertextFromTextWithVariables(prompt)],
         },
-        ...(negativePrompt
+        ...(hasNegativePrompt
           ? [
               {
                 type: 'element with title',

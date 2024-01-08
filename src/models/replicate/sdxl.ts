@@ -17,11 +17,18 @@ import {
 
 import { v4 as uuidv4 } from 'uuid';
 import { createIOVisualizationForImageOutputModel } from '../../createIOVisualization.js';
-import { ModelInput_PlainTextWithVariables_Value } from '../../reagent-noggin-shared/types/editorSchemaV1';
+import {
+  ModelInput_Integer_Value,
+  ModelInput_PlainTextWithVariables_Value,
+} from '../../reagent-noggin-shared/types/editorSchemaV1';
 import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables';
 
 type UnevaluatedModelParams = {
   prompt: ModelInput_PlainTextWithVariables_Value;
+  'negative-prompt': ModelInput_PlainTextWithVariables_Value;
+  width: ModelInput_Integer_Value;
+  height: ModelInput_Integer_Value;
+  'inference-steps': ModelInput_Integer_Value;
 };
 
 export const streamResponse: StreamModelResponse = async (
@@ -36,6 +43,7 @@ export const streamResponse: StreamModelResponse = async (
 ) => {
   const ioVisualization = createIOVisualizationForImageOutputModel(
     modelParams.partialEvaluated.prompt,
+    modelParams.partialEvaluated['negative-prompt'],
   );
 
   await setIOVisualizationRenderForRunStream(runId, ioVisualization);
@@ -48,9 +56,10 @@ export const streamResponse: StreamModelResponse = async (
     'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b';
   const input = {
     prompt: modelParams.evaluated.prompt,
-    width: 1024,
-    height: 1024,
-    num_inference_steps: 50,
+    negative_prompt: modelParams.evaluated['negative-prompt'],
+    width: modelParams.evaluated['width'],
+    height: modelParams.evaluated['height'],
+    num_inference_steps: modelParams.evaluated['inference-steps'],
   };
 
   let output: string[];

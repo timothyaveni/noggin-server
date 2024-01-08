@@ -17,11 +17,18 @@ import {
 } from '../../object-storage/minio.js';
 import { prisma } from '../../prisma.js';
 import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
-import { ModelInput_PlainTextWithVariables_Value } from '../../reagent-noggin-shared/types/editorSchemaV1';
+import {
+  ModelInput_Integer_Value,
+  ModelInput_PlainTextWithVariables_Value,
+} from '../../reagent-noggin-shared/types/editorSchemaV1';
 import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables';
 
 type UnevaluatedModelParams = {
   prompt: ModelInput_PlainTextWithVariables_Value;
+  'negative-prompt': ModelInput_PlainTextWithVariables_Value;
+  width: ModelInput_Integer_Value;
+  height: ModelInput_Integer_Value;
+  'inference-steps': ModelInput_Integer_Value;
 };
 
 export const streamResponse: StreamModelResponse = async (
@@ -36,6 +43,7 @@ export const streamResponse: StreamModelResponse = async (
 ) => {
   const ioVisualization = createIOVisualizationForImageOutputModel(
     modelParams.partialEvaluated.prompt,
+    modelParams.partialEvaluated['negative-prompt'],
   );
 
   await setIOVisualizationRenderForRunStream(runId, ioVisualization);
@@ -48,8 +56,10 @@ export const streamResponse: StreamModelResponse = async (
     'fofr/sdxl-emoji:dee76b5afde21b0f01ed7925f0665b7e879c50ee718c5f78a9d38e04d523cc5e';
   const input = {
     prompt: modelParams.evaluated.prompt,
-    width: 1024,
-    height: 1024,
+    negative_prompt: modelParams.evaluated['negative-prompt'],
+    width: modelParams.evaluated['width'],
+    height: modelParams.evaluated['height'],
+    num_inference_steps: modelParams.evaluated['inference-steps'],
   };
 
   let output: string[];
