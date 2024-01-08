@@ -223,5 +223,6 @@ wss.on('connection', async (ws: WebSocket, req: Request) => {
       );
       ws.close();
     },
+    canAcceptEarlyOutput: () => true,
   });
 });

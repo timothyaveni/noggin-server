@@ -26,6 +26,7 @@ type RunStream = {
   addLogEvent: (logEvent: any) => any;
   terminateStream: () => any;
   setHeader: (key: string, value: string) => any;
+  canAcceptEarlyOutput: () => boolean; // only early output is io visualization, which doesn't get sent in HTTP requests anyway, but the idea here is to allow streams to register as not caring about headers
   // receiveTypes: RunStreamReceiveType[];
   lastSentOutputIndex: number;
   lastSentLogIndex: number;
@@ -107,6 +108,7 @@ export const registerStream = (
     addLogEvent: streamOptions.addLogEvent || (() => {}),
     terminateStream: streamOptions.terminateStream || (() => {}),
     setHeader: streamOptions.setHeader || (() => {}),
+    canAcceptEarlyOutput: streamOptions.canAcceptEarlyOutput || (() => false),
     // receiveTypes: streamOptions.receiveTypes,
     lastSentOutputIndex: -1,
     lastSentLogIndex: -1,
@@ -126,7 +128,10 @@ export const registerStream = (
 // TODO separate function for errors
 // TODO separate function for final output asset -- or maybe even incremental assets, but we can cross that bridge in a few years lol
 const flushStreamOutput = (runId: number, stream: RunStream) => {
-  if (runStreamStates[runId] !== RunState.OPEN) {
+  if (
+    runStreamStates[runId] !== RunState.OPEN &&
+    !stream.canAcceptEarlyOutput()
+  ) {
     return;
   }
 
