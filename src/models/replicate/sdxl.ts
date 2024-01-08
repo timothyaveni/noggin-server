@@ -11,13 +11,15 @@ import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-bucket
 import { failRun, openRunStream, succeedRun } from '../../runStreams.js';
 
 import { v4 as uuidv4 } from 'uuid';
+import { ModelInput_PlainTextWithVariables_Value } from '../../reagent-noggin-shared/types/editorSchemaV1';
+import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables';
 
-type ModelParams = {
-  prompt: string;
+type UnevaluatedModelParams = {
+  prompt: ModelInput_PlainTextWithVariables_Value;
 };
 
 export const streamResponse: StreamModelResponse = async (
-  evaluatedModelParams: ModelParams,
+  modelParams: ModelParamsForStreamResponse<UnevaluatedModelParams>,
   chosenOutputFormat,
   runId: number,
   providerCredentials: {
@@ -33,7 +35,7 @@ export const streamResponse: StreamModelResponse = async (
   const model =
     'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b';
   const input = {
-    prompt: evaluatedModelParams.prompt,
+    prompt: modelParams.evaluated.prompt,
     width: 1024,
     height: 1024,
     num_inference_steps: 50,

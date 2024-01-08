@@ -1,4 +1,4 @@
-import { ContentChunk } from '../../evaluateParams';
+import { EvaluatedContentChunk } from '../../reagent-noggin-shared/types/evaluated-variables';
 
 export type OpenAIContentChunk =
   | {
@@ -16,7 +16,7 @@ export type OpenAIContentChunk =
 export type OpenAIContent = string | OpenAIContentChunk[];
 
 export const createOpenAIMultimodalContent = (
-  chunks: ContentChunk[],
+  chunks: EvaluatedContentChunk[],
 ): OpenAIContent => {
   const openAIContentChunks: OpenAIContentChunk[] = [];
 
@@ -30,14 +30,14 @@ export const createOpenAIMultimodalContent = (
           type: 'image_url',
           image_url: {
             url: chunk.image_url.url,
-            detail: chunk.image_url.openAI_detail,
+            detail: chunk.image_url.openAI_detail, // this is the main change
           },
         });
         break;
     }
   }
 
-  return maybeFlattenMultimodalContent(openAIContentChunks);
+  return maybeFlattenMultimodalContent(openAIContentChunks); // convert [{ type: 'text', text: 'hi' }] to 'hi'
 };
 
 // idk if this really does anything but /shrug felt like a good idea

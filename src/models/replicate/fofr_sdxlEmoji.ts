@@ -11,13 +11,15 @@ import {
 } from '../../object-storage/minio.js';
 import { prisma } from '../../prisma.js';
 import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
+import { ModelInput_PlainTextWithVariables_Value } from '../../reagent-noggin-shared/types/editorSchemaV1';
+import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables';
 
-type ModelParams = {
-  prompt: string;
+type UnevaluatedModelParams = {
+  prompt: ModelInput_PlainTextWithVariables_Value;
 };
 
 export const streamResponse: StreamModelResponse = async (
-  evaluatedModelParams: ModelParams,
+  modelParams: ModelParamsForStreamResponse<UnevaluatedModelParams>,
   chosenOutputFormat,
   runId: number,
   providerCredentials: {
@@ -33,7 +35,7 @@ export const streamResponse: StreamModelResponse = async (
   const model =
     'fofr/sdxl-emoji:dee76b5afde21b0f01ed7925f0665b7e879c50ee718c5f78a9d38e04d523cc5e';
   const input = {
-    prompt: evaluatedModelParams.prompt,
+    prompt: modelParams.evaluated.prompt,
     width: 1024,
     height: 1024,
   };

@@ -1,3 +1,5 @@
+import { ModelInput_PlainTextWithVariables_Value } from '../../reagent-noggin-shared/types/editorSchemaV1.js';
+import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables.js';
 import {
   openRunStream,
   succeedRun,
@@ -6,12 +8,12 @@ import {
 } from '../../runStreams.js';
 import { StreamModelResponse } from '../index.js';
 
-type ModelParams = {
-  prompt: string;
+type UnevaluatedModelParams = {
+  prompt: ModelInput_PlainTextWithVariables_Value;
 };
 
 export const streamResponse: StreamModelResponse = async (
-  evaluatedModelParams: ModelParams,
+  modelParams: ModelParamsForStreamResponse<UnevaluatedModelParams>,
   chosenOutputFormat,
   runId: number,
 ) => {
@@ -22,10 +24,10 @@ export const streamResponse: StreamModelResponse = async (
     'Keep-Alive': 'timeout=20, max=1000',
   });
 
-  const breadstick = evaluatedModelParams.prompt.includes('emoji')
+  const breadstick = modelParams.evaluated.prompt.includes('emoji')
     ? '🥖'
     : ' breadsticks';
-  const firstNumberInPrompt = evaluatedModelParams.prompt.match(/\d+/)?.[0];
+  const firstNumberInPrompt = modelParams.evaluated.prompt.match(/\d+/)?.[0];
   const breadstickCount = parseInt(firstNumberInPrompt || '50', 10);
   const delay = 100;
 

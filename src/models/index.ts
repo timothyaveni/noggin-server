@@ -1,10 +1,11 @@
 import { OutputFormat } from '../reagent-noggin-shared/types/editorSchema.js';
+import { ModelParamsForStreamResponse } from '../reagent-noggin-shared/types/evaluated-variables.js';
 import openaiIndex from './openai/index.js';
 import replicateIndex from './replicate/index.js';
 import testIndex from './test/index.js';
 
 export type StreamModelResponse = (
-  evaluatedModelParams: any,
+  modelParams: ModelParamsForStreamResponse<any>,
   chosenOutputFormat: OutputFormat,
   runId: number,
   providerCredentials: any,

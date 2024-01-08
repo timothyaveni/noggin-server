@@ -1,6 +1,11 @@
 import { yTextToSlateElement } from '@slate-yjs/core';
 import * as Y from 'yjs';
 import { EditorSchema } from './reagent-noggin-shared/types/editorSchema';
+import {
+  ChatTurnWithVariables,
+  ModelInput_PlainTextWithVariables_Value,
+  ModelInput_StandardChatWithVariables_Value,
+} from './reagent-noggin-shared/types/editorSchemaV1';
 
 // TODO sync type
 export const parseModelInputs = (
@@ -14,14 +19,13 @@ export const parseModelInputs = (
     const input = editorSchema.allEditorComponents[inputKey];
     switch (input.type) {
       case 'chat-text-user-images-with-parameters':
-      // throw new Error('TODO');
       case 'chat-text-with-parameters':
         parsedInputs[inputKey] = slateChatToStandardChat(
           yTextToSlateElement(modelInputsMap.get(inputKey, Y.XmlText)),
         );
         break;
       case 'plain-text-with-parameters':
-        parsedInputs[inputKey] = slateTextToTextWithParameters(
+        parsedInputs[inputKey] = slateTextToTextWithVariables(
           yTextToSlateElement(modelInputsMap.get(inputKey, Y.XmlText)),
         );
         break;
@@ -42,35 +46,18 @@ export const parseModelInputs = (
   return parsedInputs;
 };
 
-type ParameterizedTextChunk =
-  | {
-      type: 'text';
-      text: string;
-    }
-  | {
-      type: 'parameter';
-      parameterId: string;
-    };
-type TextWithParameters = ParameterizedTextChunk[];
-
-type ChatTurnWithParameters = {
-  speaker: 'user' | 'assistant';
-  text: TextWithParameters;
-};
-type StandardChatWithParameters = ChatTurnWithParameters[];
-
-const slateParagraphToTextWithParameters = (
+const slateParagraphToTextWithVariables = (
   slateParagraph: any,
-): TextWithParameters => {
-  const textWithParameters: TextWithParameters = [];
+): ModelInput_PlainTextWithVariables_Value => {
+  const textWithVariables: ModelInput_PlainTextWithVariables_Value = [];
   for (const child of slateParagraph.children) {
     if (child.hasOwnProperty('text')) {
-      textWithParameters.push({
+      textWithVariables.push({
         type: 'text',
         text: child.text,
       });
     } else if (child.type === 'parameter') {
-      textWithParameters.push({
+      textWithVariables.push({
         type: 'parameter',
         parameterId: child.parameterId,
       });
@@ -78,17 +65,17 @@ const slateParagraphToTextWithParameters = (
       throw new Error(`Unexpected child type ${child.type}`);
     }
   }
-  return textWithParameters;
+  return textWithVariables;
 };
 
 // TODO type
 const slateChatToStandardChat = (
   slateChat: any,
-): StandardChatWithParameters => {
+): ModelInput_StandardChatWithVariables_Value => {
   const { children } = slateChat;
-  const chatTurns: ChatTurnWithParameters[] = [];
+  const chatTurns: ChatTurnWithVariables[] = [];
 
-  let currentChatTurn: ChatTurnWithParameters | undefined;
+  let currentChatTurn: ChatTurnWithVariables | undefined;
   for (const child of children) {
     if (child.type === 'chat-turn') {
       currentChatTurn = {
@@ -100,13 +87,15 @@ const slateChatToStandardChat = (
       if (!currentChatTurn) {
         throw new Error('Expected chat turn');
       }
-      currentChatTurn.text.push(...slateParagraphToTextWithParameters(child)); // really shouldn't ever have more than one in a row -- we enforce this in the editor
+      currentChatTurn.text.push(...slateParagraphToTextWithVariables(child)); // really shouldn't ever have more than one in a row -- we enforce this in the editor
     }
   }
 
   return chatTurns;
 };
 
-const slateTextToTextWithParameters = (slateText: any): TextWithParameters => {
-  return slateParagraphToTextWithParameters(slateText.children[0]);
+const slateTextToTextWithVariables = (
+  slateText: any,
+): ModelInput_PlainTextWithVariables_Value => {
+  return slateParagraphToTextWithVariables(slateText.children[0]);
 };

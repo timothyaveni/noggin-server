@@ -322,7 +322,10 @@ const handleRequest = async (req: Request, res: Response) => {
   });
 
   streamResponse(
-    evaluatedModelParams,
+    {
+      unevaluated: parsedModelInputs,
+      evaluated: evaluatedModelParams,
+    },
     chosenOutputFormat,
     run.id,
     providerCredentials,

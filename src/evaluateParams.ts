@@ -1,78 +1,95 @@
 import { EditorSchema } from './reagent-noggin-shared/types/editorSchema';
+import {
+  ModelInput_Boolean_Value,
+  ModelInput_Integer_Value,
+  ModelInput_Number_Value,
+  ModelInput_PlainTextWithVariables_Value,
+  ModelInput_Select_Value,
+  ModelInput_SimpleSchema_Value,
+  ModelInput_StandardChatWithVariables_Value,
+  ModelInput_Value,
+} from './reagent-noggin-shared/types/editorSchemaV1';
+import {
+  EvaluatedContentChunk,
+  EvaluatedModelInput_Value,
+  EvaluatedModelInputs,
+  EvaluatedStandardChat,
+} from './reagent-noggin-shared/types/evaluated-variables';
 
 export const evaluateParamsInModelInputs = (
-  modelInputs: any,
+  modelInputs: Record<string, ModelInput_Value>,
   editorSchema: EditorSchema,
   documentParameters: any,
   parameters: any,
 ) => {
-  const newModelInputs: any = {};
+  const evaluatedModelInputs: EvaluatedModelInputs<typeof modelInputs> = {};
 
   for (const inputKey of Object.keys(editorSchema.allEditorComponents)) {
     const input = editorSchema.allEditorComponents[inputKey];
+    let thisModelInputValue: ModelInput_Value;
     switch (input.type) {
       case 'chat-text-user-images-with-parameters':
       case 'chat-text-with-parameters':
-        newModelInputs[inputKey] = evaluateParamsInChatText(
-          modelInputs[inputKey],
+        thisModelInputValue = modelInputs[
+          inputKey
+        ] as ModelInput_StandardChatWithVariables_Value;
+        evaluatedModelInputs[inputKey] = evaluateParamsInChatText(
+          thisModelInputValue,
           documentParameters,
           parameters,
         );
         break;
       case 'plain-text-with-parameters':
-        newModelInputs[inputKey] = evaluateParamsInPlainText(
-          modelInputs[inputKey],
+        thisModelInputValue = modelInputs[
+          inputKey
+        ] as ModelInput_PlainTextWithVariables_Value;
+        evaluatedModelInputs[inputKey] = evaluateParamsInPlainText(
+          thisModelInputValue,
           documentParameters,
           parameters,
         );
         break;
       case 'integer':
+        thisModelInputValue = modelInputs[inputKey] as ModelInput_Integer_Value;
+        evaluatedModelInputs[inputKey] = thisModelInputValue; // no params just yet
+        break;
       case 'number':
+        thisModelInputValue = modelInputs[inputKey] as ModelInput_Number_Value;
+        evaluatedModelInputs[inputKey] = thisModelInputValue; // no params just yet
+        break;
       case 'boolean':
+        thisModelInputValue = modelInputs[inputKey] as ModelInput_Boolean_Value;
+        evaluatedModelInputs[inputKey] = thisModelInputValue; // no params just yet
+        break;
       case 'select':
-        newModelInputs[inputKey] = modelInputs[inputKey]; // no params just yet
+        thisModelInputValue = modelInputs[inputKey] as ModelInput_Select_Value;
+        evaluatedModelInputs[inputKey] = thisModelInputValue; // no params just yet
         break;
       case 'simple-schema':
-        newModelInputs[inputKey] = modelInputs[inputKey]; // no params just yet
+        thisModelInputValue = modelInputs[
+          inputKey
+        ] as ModelInput_SimpleSchema_Value;
+        evaluatedModelInputs[inputKey] = thisModelInputValue; // no params just yet
         break;
       default:
         const _exhaustiveCheck: never = input;
     }
   }
 
-  return newModelInputs;
+  return evaluatedModelInputs;
 };
-
-export type ContentChunk =
-  | {
-      type: 'text';
-      text: string;
-    }
-  | {
-      type: 'image_url';
-      image_url: {
-        url: string;
-        openAI_detail: 'low' | 'high' | 'auto';
-      };
-    };
-
-type ChatTurn = {
-  speaker: 'user' | 'assistant';
-  content: ContentChunk[];
-};
-export type StandardChat = ChatTurn[];
 
 export const evaluateParamsInChatText = (
-  chatText: any,
+  chatText: ModelInput_StandardChatWithVariables_Value,
   documentParameters: any,
   parameters: any,
-): StandardChat => {
-  const newChatText: StandardChat = [];
+): EvaluatedModelInput_Value<ModelInput_StandardChatWithVariables_Value> => {
+  const newChatText: EvaluatedStandardChat = [];
 
   for (const turn of chatText) {
-    const contentChunks: ContentChunk[] = [];
+    const contentChunks: EvaluatedContentChunk[] = [];
 
-    const newTurn: ChatTurn = {
+    const newTurn = {
       speaker: turn.speaker,
       content: contentChunks,
     };
@@ -109,8 +126,8 @@ export const evaluateParamsInChatText = (
               break;
           }
           break;
-        case 'inline-image':
-          throw new Error('Not implemented'); // TODO
+        // case 'inline-image':
+        //   throw new Error('Not implemented'); // TODO
         default:
           // throw new Error('Unknown chunk type ' + chunk.type);
           // TODO log an error. we can't be throwing, it crashes the whole server... probably something we should fix anyway...
@@ -126,10 +143,10 @@ export const evaluateParamsInChatText = (
 
 // TODO: dry it out
 export const evaluateParamsInPlainText = (
-  plainText: any,
+  plainText: ModelInput_PlainTextWithVariables_Value,
   documentParameters: any,
   parameters: any,
-): string => {
+): EvaluatedModelInput_Value<ModelInput_PlainTextWithVariables_Value> => {
   let newPlainText = '';
 
   // console.log('pt', plainText)
@@ -144,7 +161,8 @@ export const evaluateParamsInPlainText = (
           documentParameters[chunk.parameterId].defaultValue;
         break;
       default:
-        throw new Error('Unknown chunk type ' + chunk.type);
+        // @ts-expect-error this could still happen at runtime, since it's i/o
+        throw new Error('Unknown chunk type ' + chunk.type); // todo but don't throw lol (see above)
     }
   }
 

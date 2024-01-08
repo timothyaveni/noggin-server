@@ -12,13 +12,15 @@ import {
 } from '../../object-storage/minio.js';
 import { prisma } from '../../prisma.js';
 import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
+import { ModelInput_PlainTextWithVariables_Value } from '../../reagent-noggin-shared/types/editorSchemaV1';
+import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables';
 
-type ModelParams = {
-  prompt: string;
+type UnevaluatedModelParams = {
+  prompt: ModelInput_PlainTextWithVariables_Value;
 };
 
 export const streamResponse: StreamModelResponse = async (
-  evaluatedModelParams: ModelParams,
+  modelParams: ModelParamsForStreamResponse<UnevaluatedModelParams>,
   chosenOutputFormat,
   runId: number,
   providerCredentials: {
@@ -28,7 +30,7 @@ export const streamResponse: StreamModelResponse = async (
   { sendStatus },
 ) => {
   const sha1 = createHash('sha1');
-  sha1.update(evaluatedModelParams.prompt);
+  sha1.update(modelParams.evaluated.prompt);
   const hash = sha1.digest('hex');
 
   // const png = `data:image/png;base64,${new Identicon(hash, 512).toString()}`;

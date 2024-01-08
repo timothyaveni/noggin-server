@@ -12,18 +12,37 @@ type ModelInputBase = {
 
 type EditorHeight = 'primary' | 'default';
 
-interface ModelInput_PlainTextWithParameters extends ModelInputBase {
+type TextOrVariable =
+  | {
+      type: 'text';
+      text: string;
+    }
+  | {
+      type: 'parameter';
+      parameterId: string;
+    };
+
+export type ModelInput_PlainTextWithVariables_Value = TextOrVariable[];
+
+export type ChatTurnWithVariables = {
+  speaker: 'user' | 'assistant';
+  text: ModelInput_PlainTextWithVariables_Value;
+};
+export type ModelInput_StandardChatWithVariables_Value =
+  ChatTurnWithVariables[];
+
+interface ModelInput_PlainTextWithVariables extends ModelInputBase {
   type: 'plain-text-with-parameters';
   editorHeight?: EditorHeight;
   default?: string;
 }
 
-interface ModelInput_ChatTextUserImagesWithParameters extends ModelInputBase {
+interface ModelInput_ChatTextUserImagesWithVariables extends ModelInputBase {
   type: 'chat-text-user-images-with-parameters';
   editorHeight?: EditorHeight;
 }
 
-interface ModelInput_ChatTextWithParameters extends ModelInputBase {
+interface ModelInput_ChatTextWithVariables extends ModelInputBase {
   type: 'chat-text-with-parameters';
   editorHeight?: EditorHeight;
 }
@@ -53,7 +72,7 @@ interface ModelInput_Boolean extends ModelInputBase {
   default: ModelInput_Boolean_Value;
 }
 
-// todo fancy type params here or something
+// todo fancy type params here or something -- and update evaluated-params.d.t.s
 type ModelInput_Select_Value = string | string[];
 
 interface ModelInput_Select extends ModelInputBase {
@@ -73,10 +92,19 @@ interface ModelInput_SimpleSchema extends ModelInputBase {
   includeOutputTransformations: boolean;
 }
 
+export type ModelInput_Value =
+  | ModelInput_PlainTextWithVariables_Value
+  | ModelInput_StandardChatWithVariables_Value
+  | ModelInput_Number_Value
+  | ModelInput_Integer_Value
+  | ModelInput_Boolean_Value
+  | ModelInput_Select_Value
+  | ModelInput_SimpleSchema_Value;
+
 export type ModelInput =
-  | ModelInput_PlainTextWithParameters
-  | ModelInput_ChatTextUserImagesWithParameters
-  | ModelInput_ChatTextWithParameters
+  | ModelInput_PlainTextWithVariables
+  | ModelInput_ChatTextUserImagesWithVariables
+  | ModelInput_ChatTextWithVariables
   | ModelInput_Number
   | ModelInput_Integer
   | ModelInput_Boolean

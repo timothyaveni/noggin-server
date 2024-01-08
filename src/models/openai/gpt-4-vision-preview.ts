@@ -1,7 +1,11 @@
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import { StreamModelResponse } from '..';
-import { StandardChat } from '../../evaluateParams';
+import {
+  ModelInput_PlainTextWithVariables_Value,
+  ModelInput_StandardChatWithVariables_Value,
+} from '../../reagent-noggin-shared/types/editorSchemaV1';
+import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables';
 import {
   openRunStream,
   succeedRun,
@@ -9,17 +13,15 @@ import {
 } from '../../runStreams.js';
 import { createOpenAIMultimodalContent } from './createOpenAIMultimodalContent.js';
 
-type ModelParams = {
-  'system-prompt': string;
-  'chat-prompt': StandardChat;
-  // 'temperature': number;
-  // 'max-tokens': number;
+type UnevaluatedModelParams = {
+  'system-prompt': ModelInput_PlainTextWithVariables_Value;
+  'chat-prompt': ModelInput_StandardChatWithVariables_Value;
 };
 
 type OpenAIChat = ChatCompletionMessageParam[];
 
 export const streamResponse: StreamModelResponse = async (
-  evaluatedModelParams: ModelParams,
+  modelParams: ModelParamsForStreamResponse<UnevaluatedModelParams>,
   chosenOutputFormat,
   runId: number,
   providerCredentials: {
@@ -38,14 +40,14 @@ export const streamResponse: StreamModelResponse = async (
 
   const messages: OpenAIChat = [];
 
-  if (evaluatedModelParams['system-prompt'].length) {
+  if (modelParams.evaluated['system-prompt'].length) {
     messages.push({
       role: 'system',
-      content: evaluatedModelParams['system-prompt'],
+      content: modelParams.evaluated['system-prompt'],
     });
   }
 
-  for (const turn of evaluatedModelParams['chat-prompt']) {
+  for (const turn of modelParams.evaluated['chat-prompt']) {
     messages.push({
       role: turn.speaker,
       content: createOpenAIMultimodalContent(turn.content),

@@ -1,11 +1,17 @@
-import { JSONSchema7 } from 'json-schema';
 import OpenAI from 'openai';
 import {
   ChatCompletionCreateParams,
   ChatCompletionMessageParam,
   FunctionParameters,
 } from 'openai/resources';
-import { StandardChat } from '../../evaluateParams.js';
+import {
+  ModelInput_Integer_Value,
+  ModelInput_Number_Value,
+  ModelInput_PlainTextWithVariables_Value,
+  ModelInput_SimpleSchema_Value,
+  ModelInput_StandardChatWithVariables_Value,
+} from '../../reagent-noggin-shared/types/editorSchemaV1.js';
+import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables.js';
 import {
   openRunStream,
   succeedRun,
@@ -15,21 +21,22 @@ import {
 import { StreamModelResponse } from '../index.js';
 import { createOpenAIMultimodalContent } from './createOpenAIMultimodalContent.js';
 
-type ModelParams = {
-  'system-prompt': string;
-  'chat-prompt': StandardChat;
-  temperature: number;
-  'top-p': number;
-  'frequency-penalty': number;
-  'presence-penalty': number;
-  'maximum-completion-length': number;
-  'output-structure': JSONSchema7;
+// todo there might be some type magic we can do here to grab these from the actual type in the editor schema file
+type UnevaluatedModelParams = {
+  'system-prompt': ModelInput_PlainTextWithVariables_Value;
+  'chat-prompt': ModelInput_StandardChatWithVariables_Value;
+  temperature: ModelInput_Number_Value;
+  'top-p': ModelInput_Number_Value;
+  'frequency-penalty': ModelInput_Number_Value;
+  'presence-penalty': ModelInput_Number_Value;
+  'maximum-completion-length': ModelInput_Integer_Value;
+  'output-structure': ModelInput_SimpleSchema_Value;
 };
 
 type OpenAIChat = ChatCompletionMessageParam[];
 
 export const streamResponse: StreamModelResponse = async (
-  evaluatedModelParams: ModelParams,
+  modelParams: ModelParamsForStreamResponse<UnevaluatedModelParams>,
   chosenOutputFormat,
   runId: number,
   providerCredentials: {
@@ -48,35 +55,35 @@ export const streamResponse: StreamModelResponse = async (
 
   const messages: OpenAIChat = [];
 
-  if (evaluatedModelParams['system-prompt'].length) {
+  if (modelParams.evaluated['system-prompt'].length) {
     messages.push({
       role: 'system',
-      content: evaluatedModelParams['system-prompt'],
+      content: modelParams.evaluated['system-prompt'],
     });
   }
 
-  for (const turn of evaluatedModelParams['chat-prompt']) {
+  for (const turn of modelParams.evaluated['chat-prompt']) {
     messages.push({
       role: turn.speaker,
       content: createOpenAIMultimodalContent(turn.content),
     } as ChatCompletionMessageParam); // something is going weird with the TS overload here
   }
 
-  const modelParams: ChatCompletionCreateParams = {
+  const apiParams: ChatCompletionCreateParams = {
     messages,
     model: 'gpt-3.5-turbo-1106',
-    frequency_penalty: evaluatedModelParams['frequency-penalty'],
-    presence_penalty: evaluatedModelParams['presence-penalty'],
-    max_tokens: evaluatedModelParams['maximum-completion-length'],
-    temperature: evaluatedModelParams['temperature'],
-    top_p: evaluatedModelParams['top-p'],
+    frequency_penalty: modelParams.evaluated['frequency-penalty'],
+    presence_penalty: modelParams.evaluated['presence-penalty'],
+    max_tokens: modelParams.evaluated['maximum-completion-length'],
+    temperature: modelParams.evaluated['temperature'],
+    top_p: modelParams.evaluated['top-p'],
   };
 
-  console.log(JSON.stringify(modelParams, null, 2));
+  console.log(JSON.stringify(apiParams, null, 2));
 
   if (chosenOutputFormat.type === 'chat-text') {
     const stream = await openai.chat.completions.create({
-      ...modelParams,
+      ...apiParams,
       stream: true,
     });
 
@@ -123,7 +130,7 @@ export const streamResponse: StreamModelResponse = async (
 
     succeedRun(runId, 'text', output);
   } else if (chosenOutputFormat.type === 'structured-data') {
-    const outputStructureSchema = evaluatedModelParams['output-structure'];
+    const outputStructureSchema = modelParams.evaluated['output-structure'];
 
     let gptSchema;
     let needsUnwrap = false;
@@ -163,7 +170,7 @@ export const streamResponse: StreamModelResponse = async (
     );
 
     const result = await openai.chat.completions.create({
-      ...modelParams,
+      ...apiParams,
       tools: [
         {
           type: 'function',
