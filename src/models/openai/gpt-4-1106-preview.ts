@@ -1,11 +1,14 @@
 import OpenAI from 'openai';
 import {
+  ChatCompletionCreateParams,
   ChatCompletionMessageParam,
   FunctionParameters,
 } from 'openai/resources';
 import { StreamModelResponse } from '..';
 import { createIOVisualizationForChatTextModel } from '../../createIOVisualization.js';
 import {
+  ModelInput_Integer_Value,
+  ModelInput_Number_Value,
   ModelInput_PlainTextWithVariables_Value,
   ModelInput_SimpleSchema_Value,
   ModelInput_StandardChatWithVariables_Value,
@@ -23,6 +26,8 @@ import { createOpenAIMultimodalContent } from './createOpenAIMultimodalContent.j
 type UnevaluatedModelParams = {
   'system-prompt': ModelInput_PlainTextWithVariables_Value;
   'chat-prompt': ModelInput_StandardChatWithVariables_Value;
+  temperature: ModelInput_Number_Value;
+  'maximum-completion-length': ModelInput_Integer_Value;
   'output-structure': ModelInput_SimpleSchema_Value;
 };
 
@@ -68,10 +73,16 @@ export const streamResponse: StreamModelResponse = async (
     } as ChatCompletionMessageParam); // something is going weird with the TS overload here
   }
 
+  const apiParams: ChatCompletionCreateParams = {
+    messages,
+    model: 'gpt-4-1106-preview',
+    temperature: modelParams.evaluated['temperature'],
+    max_tokens: modelParams.evaluated['maximum-completion-length'],
+  };
+
   if (chosenOutputFormat.type === 'chat-text') {
     const stream = await openai.chat.completions.create({
-      messages,
-      model: 'gpt-4-1106-preview',
+      ...apiParams,
       stream: true,
     });
 
@@ -159,7 +170,7 @@ export const streamResponse: StreamModelResponse = async (
     );
 
     const result = await openai.chat.completions.create({
-      messages,
+      ...apiParams,
       tools: [
         {
           type: 'function',
@@ -175,7 +186,6 @@ export const streamResponse: StreamModelResponse = async (
           name: 'respond',
         },
       },
-      model: 'gpt-4-1106-preview',
     });
 
     console.log(JSON.stringify(result, null, 2));

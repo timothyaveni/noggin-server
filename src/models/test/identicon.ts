@@ -17,11 +17,15 @@ import {
 } from '../../object-storage/minio.js';
 import { prisma } from '../../prisma.js';
 import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
-import { ModelInput_PlainTextWithVariables_Value } from '../../reagent-noggin-shared/types/editorSchemaV1';
+import {
+  ModelInput_Integer_Value,
+  ModelInput_PlainTextWithVariables_Value,
+} from '../../reagent-noggin-shared/types/editorSchemaV1';
 import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables';
 
 type UnevaluatedModelParams = {
   prompt: ModelInput_PlainTextWithVariables_Value;
+  size: ModelInput_Integer_Value;
 };
 
 export const streamResponse: StreamModelResponse = async (
@@ -50,7 +54,10 @@ export const streamResponse: StreamModelResponse = async (
   //   .getDump();
 
   // this is probably converting to base64 and back but i couldn't seem to get the getDump to work
-  const png = Buffer.from(new Identicon(hash, 512).toString(), 'base64');
+  const png = Buffer.from(
+    new Identicon(hash, modelParams.evaluated.size).toString(),
+    'base64',
+  );
 
   await new Promise((resolve) => setTimeout(resolve, 1000));
 

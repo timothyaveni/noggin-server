@@ -27,11 +27,12 @@ const schema: EditorSchema = {
         en_US: 'Width',
       },
       description: {
-        en_US: 'Width of the generated image',
+        en_US:
+          'Width of the generated image. Even if you need smaller images, this model performs best at a width of 1024.',
       },
       type: 'integer',
       default: 1024,
-      min: 1,
+      min: 512,
       max: 1024,
     },
     height: {
@@ -39,11 +40,12 @@ const schema: EditorSchema = {
         en_US: 'Height',
       },
       description: {
-        en_US: 'Height of the generated image',
+        en_US:
+          'Height of the generated image. Even if you need smaller images, this model performs best at a height of 1024.',
       },
       type: 'integer',
       default: 1024,
-      min: 1,
+      min: 512,
       max: 1024,
     },
 

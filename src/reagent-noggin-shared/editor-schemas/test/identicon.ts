@@ -13,27 +13,15 @@ const schema: EditorSchema = {
       type: 'plain-text-with-parameters',
     },
 
-    width: {
+    size: {
       name: {
-        en_US: 'Width',
+        en_US: 'Size',
       },
       description: {
-        en_US: 'Width of the generated image',
+        en_US: 'Width and height of the generated image',
       },
       type: 'integer',
-      default: 1024,
-      min: 1,
-      max: 4096,
-    },
-    height: {
-      name: {
-        en_US: 'Height',
-      },
-      description: {
-        en_US: 'Height of the generated image',
-      },
-      type: 'number',
-      default: 1024,
+      default: 512,
       min: 1,
       max: 4096,
     },
@@ -53,7 +41,7 @@ const schema: EditorSchema = {
       description: {
         en_US: 'This model will output a single image file.',
       },
-      editorComponents: ['width', 'height'],
+      editorComponents: ['size'],
     },
   ],
 };

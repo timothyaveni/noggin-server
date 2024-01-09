@@ -3,6 +3,8 @@ import { ChatCompletionMessageParam } from 'openai/resources';
 import { StreamModelResponse } from '..';
 import { createIOVisualizationForChatTextModel } from '../../createIOVisualization.js';
 import {
+  ModelInput_Integer_Value,
+  ModelInput_Number_Value,
   ModelInput_PlainTextWithVariables_Value,
   ModelInput_StandardChatWithVariables_Value,
 } from '../../reagent-noggin-shared/types/editorSchemaV1';
@@ -18,6 +20,8 @@ import { createOpenAIMultimodalContent } from './createOpenAIMultimodalContent.j
 type UnevaluatedModelParams = {
   'system-prompt': ModelInput_PlainTextWithVariables_Value;
   'chat-prompt': ModelInput_StandardChatWithVariables_Value;
+  temperature: ModelInput_Number_Value;
+  'maximum-completion-length': ModelInput_Integer_Value;
 };
 
 type OpenAIChat = ChatCompletionMessageParam[];
@@ -67,7 +71,8 @@ export const streamResponse: StreamModelResponse = async (
   const stream = await openai.chat.completions.create({
     messages,
     model: 'gpt-4-vision-preview',
-    max_tokens: 2048,
+    temperature: modelParams.evaluated['temperature'],
+    max_tokens: modelParams.evaluated['maximum-completion-length'],
     stream: true,
   });
 
