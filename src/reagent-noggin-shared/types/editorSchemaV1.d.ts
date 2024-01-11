@@ -129,7 +129,7 @@ export type ModelInput =
   | ModelInput_Select
   | ModelInput_SimpleSchema;
 
-type OutputFormat = {
+export type OutputFormat = {
   type: 'chat-text' | 'completion' | 'image' | 'structured-data';
   key: string;
   name: I18nString;
