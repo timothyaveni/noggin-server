@@ -57,7 +57,7 @@ const schema: EditorSchema = {
       type: 'integer',
       default: 50,
       min: 1,
-      max: 500,
+      max: 100,
     },
   },
 

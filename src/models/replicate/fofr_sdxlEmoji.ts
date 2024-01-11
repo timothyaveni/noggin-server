@@ -65,9 +65,9 @@ export const streamResponse: StreamModelResponse = async (
   let output: string[];
   try {
     output = (await replicate.run(model, { input })) as string[];
-  } catch (e) {
+  } catch (e: any) {
     // smdh nsfw content
-    console.error(e);
+    // console.error(e);
 
     // todo maybe
     // writeLogToRunStream(runId, {
@@ -80,7 +80,12 @@ export const streamResponse: StreamModelResponse = async (
     //   stage: 'run_model',
     // });
 
-    failRun(runId, 'Error from Replicate API', e);
+    // TODO: i18n
+    const message = e.message
+      ? 'Error from Replicate API: ' + e.message
+      : 'Error from Replicate API';
+
+    failRun(runId, message);
     return;
   }
 

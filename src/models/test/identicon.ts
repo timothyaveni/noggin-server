@@ -1,13 +1,13 @@
 import Identicon from 'identicon.js';
 import { StreamModelResponse } from '..';
 import {
+  failRun,
   openRunStream,
   setIOVisualizationRenderForRunStream,
   succeedRun,
 } from '../../runStreams.js';
 
 import { createHash } from 'crypto';
-
 import { v4 as uuidv4 } from 'uuid';
 import { createIOVisualizationForImageOutputModel } from '../../createIOVisualization.js';
 import {
@@ -59,7 +59,12 @@ export const streamResponse: StreamModelResponse = async (
     'base64',
   );
 
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 2500));
+
+  if (modelParams.evaluated.prompt.includes('error')) {
+    failRun(runId, 'Error!');
+    return;
+  }
 
   const outputAssetUuid = uuidv4();
   const outputAssetFilename = `${outputAssetUuid}.png`;
