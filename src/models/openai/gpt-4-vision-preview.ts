@@ -10,6 +10,7 @@ import {
 } from '../../reagent-noggin-shared/types/editorSchemaV1';
 import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables';
 import {
+  failRun,
   openRunStream,
   setIOVisualizationRenderForRunStream,
   succeedRun,
@@ -68,13 +69,23 @@ export const streamResponse: StreamModelResponse = async (
 
   console.log(JSON.stringify(messages));
 
-  const stream = await openai.chat.completions.create({
-    messages,
-    model: 'gpt-4-vision-preview',
-    temperature: modelParams.evaluated['temperature'],
-    max_tokens: modelParams.evaluated['maximum-completion-length'],
-    stream: true,
-  });
+  let stream;
+  try {
+    stream = await openai.chat.completions.create({
+      messages,
+      model: 'gpt-4-vision-preview',
+      temperature: modelParams.evaluated['temperature'],
+      max_tokens: modelParams.evaluated['maximum-completion-length'],
+      stream: true,
+    });
+  } catch (e: any) {
+    const message = e.message
+      ? 'Error from OpenAI API: ' + e.message
+      : 'Error from OpenAI API';
+
+    failRun(runId, message);
+    return;
+  }
 
   let output = '';
 

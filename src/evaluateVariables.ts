@@ -139,7 +139,8 @@ export const evaluateVariablesInChatText = (
                 openAI_detail: 'low' | 'high' | 'auto';
               } = {
                 url: parameters[chunk.parameterId] || '', // TODO: not sure i'm digging the return type of 'parameters'. also, the empty string should trigger a warning
-                openAI_detail: 'low', // yeah that's not gonna work
+                openAI_detail:
+                  documentParameters[chunk.parameterId].openAI_detail, // yeah that's not gonna work
               };
               chunk.evaluated = {
                 variableType: 'image',
