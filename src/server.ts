@@ -29,6 +29,7 @@ app.post(
   '*',
   bodyParser.raw({
     inflate: true,
+    limit: '10mb',
     type: '*/*', // postel's law as a service
   }),
   (req, _res, next) => {
