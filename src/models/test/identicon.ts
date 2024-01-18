@@ -8,14 +8,8 @@ import {
 } from '../../runStreams.js';
 
 import { createHash } from 'crypto';
-import { v4 as uuidv4 } from 'uuid';
 import { createIOVisualizationForImageOutputModel } from '../../createIOVisualization.js';
-import {
-  getBucket,
-  getExternalUrlForBucket,
-  minioClient,
-} from '../../object-storage/minio.js';
-import { prisma } from '../../prisma.js';
+import { createAssetInBucket } from '../../object-storage/createAssetInBucket.js';
 import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
 import {
   ModelInput_Integer_Value,
@@ -66,29 +60,12 @@ export const streamResponse: StreamModelResponse = async (
     return;
   }
 
-  const outputAssetUuid = uuidv4();
-  const outputAssetFilename = `${outputAssetUuid}.png`;
-
-  await minioClient.putObject(
-    await getBucket(ReagentBucket.NOGGIN_RUN_OUTPUTS),
-    outputAssetFilename,
+  const { url } = await createAssetInBucket(
+    runId,
+    ReagentBucket.NOGGIN_RUN_OUTPUTS,
     png,
-    {
-      'Content-Type': 'image/png',
-    },
+    'image/png',
   );
-
-  const { url } = await prisma.nogginOutputAssetObject.create({
-    data: {
-      uuid: outputAssetUuid,
-      filename: outputAssetFilename,
-      nogginRunId: runId,
-      mimeType: 'image/png',
-      url: `${getExternalUrlForBucket(
-        ReagentBucket.NOGGIN_RUN_OUTPUTS,
-      )}/${outputAssetFilename}`,
-    },
-  });
 
   // write the PNG from the replicate API to the express response
   openRunStream(runId, {

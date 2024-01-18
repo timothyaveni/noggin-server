@@ -219,14 +219,15 @@ const handleRequest = async (req: Request, res: Response) => {
 
   console.log(parsedModelInputs);
 
-  const documentParameters = yDoc.get('documentParameters', Y.Map).toJSON();
+  const documentVariables = yDoc.get('documentParameters', Y.Map).toJSON();
 
   const nogginOptions = yDoc.get('nogginOptions', Y.Map).toJSON();
 
   // TODO: filter out reserved params like 'key'
-  const requestParameters = await createRequestParameters(
+  let requestParameters = await createRequestParameters(
+    run.id,
     req,
-    documentParameters,
+    documentVariables,
   );
   // TODO allow overrides too, i guess
 
@@ -236,7 +237,7 @@ const handleRequest = async (req: Request, res: Response) => {
   } = evaluateVariablesInModelInputs(
     parsedModelInputs,
     editorSchema,
-    documentParameters,
+    documentVariables,
     requestParameters,
   );
 
