@@ -12,6 +12,7 @@ import {
   openRunStream,
   setIOVisualizationRenderForRunStream,
   succeedRun,
+  writeIncrementalContentToRunStream,
 } from '../../runStreams.js';
 import { StreamModelResponse } from '../index.js';
 
@@ -108,5 +109,6 @@ export const streamResponse: StreamModelResponse = async (
 
   console.log(finalOutput);
 
-  succeedRun(runId, 'text', finalOutput);
+  writeIncrementalContentToRunStream(runId, 'text', finalOutput, output);
+  succeedRun(runId, 'text', finalOutput, output);
 };
