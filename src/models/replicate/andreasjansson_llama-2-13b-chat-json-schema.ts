@@ -1,6 +1,11 @@
 import Replicate from 'replicate';
 import { flattenTextOnlyContentChunks } from '../../convertEvaluatedContentChunks.js';
 import { createIOVisualizationForChatTextModel } from '../../createIOVisualization.js';
+import { getReplicateCost } from '../../reagent-noggin-shared/cost-calculation/replicate.js';
+import {
+  saveFinalCostEstimate,
+  savePreliminaryCostEstimate,
+} from '../../reagent-noggin-shared/cost-calculation/save-cost-calculations.js';
 import {
   ModelInput_Integer_Value,
   ModelInput_Number_Value,
@@ -74,6 +79,9 @@ export const streamResponse: StreamModelResponse = async (
     }
   }
 
+  // TODO: pretty rough estimate. preliminary estimates should go over so we aren't likely to cap out a model's limit
+  savePreliminaryCostEstimate(runId, getReplicateCost('a40Large', 5));
+
   const output = (await replicate.run(
     'andreasjansson/llama-2-13b-chat-gguf:60ec5dda9ff9ee0b6f786c9d1157842e6ab3cc931139ad98fe99e08a35c5d4d4',
     {
@@ -86,6 +94,17 @@ export const streamResponse: StreamModelResponse = async (
         frequency_penalty: modelParams.evaluated['frequency-penalty'],
         presence_penalty: modelParams.evaluated['presence-penalty'],
       },
+    },
+    (prediction) => {
+      if (
+        prediction.status === 'succeeded' &&
+        prediction.metrics?.predict_time != null
+      ) {
+        saveFinalCostEstimate(
+          runId,
+          getReplicateCost('a40Large', prediction.metrics.predict_time),
+        );
+      }
     },
   )) as string[];
 

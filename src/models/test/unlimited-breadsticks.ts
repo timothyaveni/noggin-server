@@ -1,3 +1,8 @@
+import {
+  saveFinalCostEstimate,
+  savePreliminaryCostEstimate,
+} from '../../reagent-noggin-shared/cost-calculation/save-cost-calculations.js';
+import { unit } from '../../reagent-noggin-shared/cost-calculation/units.js';
 import { ModelInput_PlainTextWithVariables_Value } from '../../reagent-noggin-shared/types/editorSchemaV1.js';
 import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables.js';
 import {
@@ -29,7 +34,14 @@ export const streamResponse: StreamModelResponse = async (
     : ' breadsticks';
   const firstNumberInPrompt = modelParams.evaluated.prompt.match(/\d+/)?.[0];
   const breadstickCount = parseInt(firstNumberInPrompt || '50', 10);
+  const modelCost = modelParams.evaluated.prompt.includes('pricey')
+    ? unit(0.01, 'credits / outtoken')
+    : unit(0, 'credits / outtoken');
   const delay = 100;
+
+  const runCost = modelCost.multiply(unit(breadstickCount, 'outtoken'));
+
+  savePreliminaryCostEstimate(runId, runCost);
 
   let output = '';
   for (let i = 0; i < breadstickCount; i++) {
@@ -58,6 +70,8 @@ export const streamResponse: StreamModelResponse = async (
       output,
     },
   });
+
+  saveFinalCostEstimate(runId, runCost);
 
   succeedRun(runId, 'text', output);
 };

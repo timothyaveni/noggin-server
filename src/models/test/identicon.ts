@@ -10,6 +10,11 @@ import {
 import { createHash } from 'crypto';
 import { createIOVisualizationForImageOutputModel } from '../../createIOVisualization.js';
 import { createAssetInBucket } from '../../object-storage/createAssetInBucket.js';
+import {
+  saveFinalCostEstimate,
+  savePreliminaryCostEstimate,
+} from '../../reagent-noggin-shared/cost-calculation/save-cost-calculations.js';
+import { unit } from '../../reagent-noggin-shared/cost-calculation/units.js';
 import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
 import {
   ModelInput_Integer_Value,
@@ -37,6 +42,8 @@ export const streamResponse: StreamModelResponse = async (
   );
 
   await setIOVisualizationRenderForRunStream(runId, ioVisualization);
+
+  savePreliminaryCostEstimate(runId, unit(0, 'credits'));
 
   const sha1 = createHash('sha1');
   sha1.update(modelParams.evaluated.prompt);
@@ -72,6 +79,8 @@ export const streamResponse: StreamModelResponse = async (
     // 'Content-Type': 'image/png',
     // 'Content-Length': png.data.length,
   });
+
+  saveFinalCostEstimate(runId, unit(0, 'credits'));
 
   // TODO same as other
   succeedRun(runId, 'assetUrl', url);

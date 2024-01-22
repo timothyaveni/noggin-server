@@ -10,6 +10,11 @@ import {
 
 import { createIOVisualizationForImageOutputModel } from '../../createIOVisualization.js';
 import { createAssetInBucket } from '../../object-storage/createAssetInBucket.js';
+import { getReplicateCost } from '../../reagent-noggin-shared/cost-calculation/replicate.js';
+import {
+  saveFinalCostEstimate,
+  savePreliminaryCostEstimate,
+} from '../../reagent-noggin-shared/cost-calculation/save-cost-calculations.js';
 import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
 import {
   ModelInput_Integer_Value,
@@ -56,9 +61,21 @@ export const streamResponse: StreamModelResponse = async (
     num_inference_steps: modelParams.evaluated['inference-steps'],
   };
 
+  savePreliminaryCostEstimate(runId, getReplicateCost('a40Large', 16));
+
   let output: string[];
   try {
-    output = (await replicate.run(model, { input })) as string[];
+    output = (await replicate.run(model, { input }, (prediction) => {
+      if (
+        prediction.status === 'succeeded' &&
+        prediction.metrics?.predict_time != null
+      ) {
+        saveFinalCostEstimate(
+          runId,
+          getReplicateCost('a40Large', prediction.metrics.predict_time),
+        );
+      }
+    })) as string[];
   } catch (e: any) {
     // smdh nsfw content
     // console.error(e);
