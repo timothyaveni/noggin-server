@@ -11,7 +11,10 @@ import { ChatCompletionMessageParam } from 'openai/resources';
 tokenizer.modelName = 'gpt-4';
 const { isWithinTokenLimit } = tokenizer;
 
-import { add, unit } from '../units.js';
+import {
+  add,
+  unit,
+} from '../../reagent-noggin-shared/cost-calculation/units.js';
 
 export const countChatInputTokens = async ({
   chat,

@@ -1,6 +1,5 @@
 import * as math from 'mathjs';
-import { prisma } from '../../prisma.js';
-import { roundCreditCost } from './units.js';
+import { prisma } from '../prisma.js';
 
 export const savePreliminaryCostEstimate = async (
   runId: number,
@@ -40,4 +39,11 @@ export const saveFinalCostCalculation = async (
     },
     update,
   });
+};
+
+const roundCreditCost = (cost: math.Unit) => {
+  const quastraValue = cost.to('quastra').toNumber();
+  const rounded = math.ceil(quastraValue);
+  const roundedQuastra = math.unit(rounded, 'quastra');
+  return roundedQuastra;
 };

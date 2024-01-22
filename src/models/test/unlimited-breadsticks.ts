@@ -1,7 +1,7 @@
 import {
   saveFinalCostCalculation,
   savePreliminaryCostEstimate,
-} from '../../reagent-noggin-shared/cost-calculation/save-cost-calculations.js';
+} from '../../cost-calculation/save-cost-calculations.js';
 import { unit } from '../../reagent-noggin-shared/cost-calculation/units.js';
 import { ModelInput_PlainTextWithVariables_Value } from '../../reagent-noggin-shared/types/editorSchemaV1.js';
 import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables.js';

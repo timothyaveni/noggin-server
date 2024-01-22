@@ -1,11 +1,11 @@
 import Replicate from 'replicate';
 import { flattenTextOnlyContentChunks } from '../../convertEvaluatedContentChunks.js';
-import { createIOVisualizationForChatTextModel } from '../../createIOVisualization.js';
-import { getReplicateCost } from '../../reagent-noggin-shared/cost-calculation/replicate.js';
+import { getReplicateCost } from '../../cost-calculation/replicate.js';
 import {
   saveFinalCostCalculation,
   savePreliminaryCostEstimate,
-} from '../../reagent-noggin-shared/cost-calculation/save-cost-calculations.js';
+} from '../../cost-calculation/save-cost-calculations.js';
+import { createIOVisualizationForChatTextModel } from '../../createIOVisualization.js';
 import {
   ModelInput_Integer_Value,
   ModelInput_Number_Value,

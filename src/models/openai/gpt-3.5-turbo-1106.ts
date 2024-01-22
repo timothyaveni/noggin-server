@@ -4,16 +4,16 @@ import {
   ChatCompletionMessageParam,
   FunctionParameters,
 } from 'openai/resources';
-import { createIOVisualizationForChatTextModel } from '../../createIOVisualization.js';
 import {
   countChatInputTokens,
   countTextOutTokens,
-} from '../../reagent-noggin-shared/cost-calculation/openai/count-openai-tokens.js';
-import { getOpenAiChatCompletionCost } from '../../reagent-noggin-shared/cost-calculation/openai/openai-cost.js';
+} from '../../cost-calculation/openai/count-openai-tokens.js';
+import { getOpenAiChatCompletionCost } from '../../cost-calculation/openai/openai-cost.js';
 import {
   saveFinalCostCalculation,
   savePreliminaryCostEstimate,
-} from '../../reagent-noggin-shared/cost-calculation/save-cost-calculations.js';
+} from '../../cost-calculation/save-cost-calculations.js';
+import { createIOVisualizationForChatTextModel } from '../../createIOVisualization.js';
 import { unit } from '../../reagent-noggin-shared/cost-calculation/units.js';
 import {
   ModelInput_Integer_Value,

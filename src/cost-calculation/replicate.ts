@@ -1,4 +1,4 @@
-import { unit } from './units.js';
+import { unit } from '../reagent-noggin-shared/cost-calculation/units.js';
 
 // https://replicate.com/docs/billing
 const GPU_COSTS = {

@@ -30,25 +30,4 @@ try {
   // ignore. i wish there were a better way to check but the source code seems to say no
 }
 
-const gpt35TurboInputCost = math.unit(0.001, 'dollars / kilointoken');
-const gpt35TurboOutputCost = math.unit(0.002, 'dollars / kiloouttoken');
-
-export const roundCreditCost = (cost: math.Unit) => {
-  const quastraValue = cost.to('quastra').toNumber();
-  const rounded = math.ceil(quastraValue);
-  const roundedQuastra = math.unit(rounded, 'quastra');
-  return roundedQuastra;
-};
-
-// console.log(
-//   'token',
-
-//   roundCreditCost(
-//     add(
-//       unit(1000, 'intokens').multiply(gpt35TurboInputCost),
-//       unit(50, 'outtokens').multiply(gpt35TurboOutputCost),
-//     ),
-//   ).toNumber('quastra'),
-// );
-
 export { add, unit };
