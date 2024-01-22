@@ -7,6 +7,16 @@ import {
 import { StreamModelResponse } from '..';
 import { createIOVisualizationForChatTextModel } from '../../createIOVisualization.js';
 import {
+  countChatInputTokens,
+  countTextOutTokens,
+} from '../../reagent-noggin-shared/cost-calculation/openai/count-openai-tokens.js';
+import { getOpenAiChatCompletionCost } from '../../reagent-noggin-shared/cost-calculation/openai/openai-cost.js';
+import {
+  saveFinalCostCalculation,
+  savePreliminaryCostEstimate,
+} from '../../reagent-noggin-shared/cost-calculation/save-cost-calculations.js';
+import { unit } from '../../reagent-noggin-shared/cost-calculation/units.js';
+import {
   ModelInput_Integer_Value,
   ModelInput_Number_Value,
   ModelInput_PlainTextWithVariables_Value,
@@ -86,6 +96,26 @@ export const streamResponse: StreamModelResponse = async (
       stream: true,
     });
 
+    const inputTokenCount = await countChatInputTokens({
+      chat: messages,
+    });
+
+    const outputTokenLengthEstimate = unit(
+      modelParams.evaluated['maximum-completion-length'] || 4095,
+      'outtokens',
+    );
+
+    const preliminaryCost = getOpenAiChatCompletionCost(
+      'gpt-4-1106-preview',
+      inputTokenCount,
+      outputTokenLengthEstimate,
+    );
+
+    savePreliminaryCostEstimate(runId, preliminaryCost, {
+      inputTokenCount,
+      outputTokenLengthEstimate,
+    });
+
     let output = '';
 
     for await (const chunk of stream) {
@@ -126,6 +156,19 @@ export const streamResponse: StreamModelResponse = async (
         text: 'Model full output',
         output,
       },
+    });
+
+    const outputTokenCount = await countTextOutTokens(output);
+
+    const finalCost = getOpenAiChatCompletionCost(
+      'gpt-4-1106-preview',
+      inputTokenCount,
+      outputTokenCount,
+    );
+
+    saveFinalCostCalculation(runId, finalCost, {
+      inputTokenCount,
+      outputTokenCount,
     });
 
     succeedRun(runId, 'text', output);

@@ -1,5 +1,5 @@
 import {
-  saveFinalCostEstimate,
+  saveFinalCostCalculation,
   savePreliminaryCostEstimate,
 } from '../../reagent-noggin-shared/cost-calculation/save-cost-calculations.js';
 import { unit } from '../../reagent-noggin-shared/cost-calculation/units.js';
@@ -71,7 +71,7 @@ export const streamResponse: StreamModelResponse = async (
     },
   });
 
-  saveFinalCostEstimate(runId, runCost);
+  saveFinalCostCalculation(runId, runCost);
 
   succeedRun(runId, 'text', output);
 };

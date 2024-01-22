@@ -6,6 +6,16 @@ import {
 } from 'openai/resources';
 import { createIOVisualizationForChatTextModel } from '../../createIOVisualization.js';
 import {
+  countChatInputTokens,
+  countTextOutTokens,
+} from '../../reagent-noggin-shared/cost-calculation/openai/count-openai-tokens.js';
+import { getOpenAiChatCompletionCost } from '../../reagent-noggin-shared/cost-calculation/openai/openai-cost.js';
+import {
+  saveFinalCostCalculation,
+  savePreliminaryCostEstimate,
+} from '../../reagent-noggin-shared/cost-calculation/save-cost-calculations.js';
+import { unit } from '../../reagent-noggin-shared/cost-calculation/units.js';
+import {
   ModelInput_Integer_Value,
   ModelInput_Number_Value,
   ModelInput_PlainTextWithVariables_Value,
@@ -95,6 +105,26 @@ export const streamResponse: StreamModelResponse = async (
       stream: true,
     });
 
+    const inputTokenCount = await countChatInputTokens({
+      chat: messages,
+    });
+
+    const outputTokenLengthEstimate = unit(
+      modelParams.evaluated['maximum-completion-length'] || 4095,
+      'outtokens',
+    );
+
+    const preliminaryCost = getOpenAiChatCompletionCost(
+      'gpt-3.5-turbo-1106',
+      inputTokenCount,
+      outputTokenLengthEstimate,
+    );
+
+    savePreliminaryCostEstimate(runId, preliminaryCost, {
+      inputTokenCount,
+      outputTokenLengthEstimate,
+    });
+
     let output = '';
 
     // TODO: some of these models are kinda crazy fast -- we definitely want to throttle/batch log calls, even if we write to the response stream more frequently
@@ -134,6 +164,19 @@ export const streamResponse: StreamModelResponse = async (
         text: 'Model full output',
         output,
       },
+    });
+
+    const outputTokenCount = await countTextOutTokens(output);
+
+    const finalCost = getOpenAiChatCompletionCost(
+      'gpt-3.5-turbo-1106',
+      inputTokenCount,
+      outputTokenCount,
+    );
+
+    saveFinalCostCalculation(runId, finalCost, {
+      inputTokenCount,
+      outputTokenCount,
     });
 
     succeedRun(runId, 'text', output);

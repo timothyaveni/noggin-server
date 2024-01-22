@@ -3,7 +3,7 @@ import { flattenTextOnlyContentChunks } from '../../convertEvaluatedContentChunk
 import { createIOVisualizationForChatTextModel } from '../../createIOVisualization.js';
 import { getReplicateCost } from '../../reagent-noggin-shared/cost-calculation/replicate.js';
 import {
-  saveFinalCostEstimate,
+  saveFinalCostCalculation,
   savePreliminaryCostEstimate,
 } from '../../reagent-noggin-shared/cost-calculation/save-cost-calculations.js';
 import {
@@ -100,7 +100,7 @@ export const streamResponse: StreamModelResponse = async (
         prediction.status === 'succeeded' &&
         prediction.metrics?.predict_time != null
       ) {
-        saveFinalCostEstimate(
+        saveFinalCostCalculation(
           runId,
           getReplicateCost('a40Large', prediction.metrics.predict_time),
         );

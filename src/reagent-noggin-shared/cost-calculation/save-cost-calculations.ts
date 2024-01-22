@@ -22,7 +22,7 @@ export const savePreliminaryCostEstimate = async (
   });
 };
 
-export const saveFinalCostEstimate = async (
+export const saveFinalCostCalculation = async (
   runId: number,
   cost: math.Unit,
   metadata?: any,

@@ -11,7 +11,7 @@ import { createHash } from 'crypto';
 import { createIOVisualizationForImageOutputModel } from '../../createIOVisualization.js';
 import { createAssetInBucket } from '../../object-storage/createAssetInBucket.js';
 import {
-  saveFinalCostEstimate,
+  saveFinalCostCalculation,
   savePreliminaryCostEstimate,
 } from '../../reagent-noggin-shared/cost-calculation/save-cost-calculations.js';
 import { unit } from '../../reagent-noggin-shared/cost-calculation/units.js';
@@ -80,7 +80,7 @@ export const streamResponse: StreamModelResponse = async (
     // 'Content-Length': png.data.length,
   });
 
-  saveFinalCostEstimate(runId, unit(0, 'credits'));
+  saveFinalCostCalculation(runId, unit(0, 'credits'));
 
   // TODO same as other
   succeedRun(runId, 'assetUrl', url);

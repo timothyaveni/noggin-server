@@ -12,7 +12,7 @@ import { createIOVisualizationForImageOutputModel } from '../../createIOVisualiz
 import { createAssetInBucket } from '../../object-storage/createAssetInBucket.js';
 import { getReplicateCost } from '../../reagent-noggin-shared/cost-calculation/replicate.js';
 import {
-  saveFinalCostEstimate,
+  saveFinalCostCalculation,
   savePreliminaryCostEstimate,
 } from '../../reagent-noggin-shared/cost-calculation/save-cost-calculations.js';
 import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
@@ -70,7 +70,7 @@ export const streamResponse: StreamModelResponse = async (
         prediction.status === 'succeeded' &&
         prediction.metrics?.predict_time != null
       ) {
-        saveFinalCostEstimate(
+        saveFinalCostCalculation(
           runId,
           getReplicateCost('a40Large', prediction.metrics.predict_time),
         );
