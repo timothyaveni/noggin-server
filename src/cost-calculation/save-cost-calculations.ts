@@ -7,7 +7,9 @@ export const savePreliminaryCostEstimate = async (
   metadata?: any,
 ) => {
   const update = {
-    estimatedCostQuastra: roundCreditCost(cost).to('quastra').toNumber(),
+    estimatedCostQuastra: BigInt(
+      roundCreditCost(cost).to('quastra').toNumber(),
+    ),
     estimationMetadata: metadata,
   };
 
@@ -27,7 +29,7 @@ export const saveFinalCostCalculation = async (
   metadata?: any,
 ) => {
   const update = {
-    computedCostQuastra: roundCreditCost(cost).to('quastra').toNumber(),
+    computedCostQuastra: BigInt(roundCreditCost(cost).to('quastra').toNumber()),
     computationMetadata: metadata,
   };
 
