@@ -36,6 +36,7 @@ type RequestParametersWithMetadata = Record<
   | {
       type: 'text';
       text: string;
+      maxLength?: number;
     }
   | {
       type: 'image';
@@ -65,16 +66,19 @@ const getRequestParametersFromRequest = (
           parameters[parameterKey] = {
             type: 'text',
             text: bodyValue.toString(),
+            maxLength: parameter.maxLength,
           };
         } else if (queryValue) {
           parameters[parameterKey] = {
             type: 'text',
             text: queryValue.toString(),
+            maxLength: parameter.maxLength,
           };
         } else {
           parameters[parameterKey] = {
             type: 'text',
             text: parameter.defaultValue || '',
+            maxLength: parameter.maxLength,
           };
         }
         break;
@@ -106,7 +110,19 @@ const getRequestParametersFromRequest = (
   return parameters;
 };
 
-const truncateMaxTextLength = (parameters: RequestParametersWithMetadata) => {}; // TODO noop
+const truncateMaxTextLength = (parameters: RequestParametersWithMetadata) => {
+  for (const parameterKey of Object.keys(parameters)) {
+    const parameter = parameters[parameterKey];
+    if (parameter.type === 'text') {
+      // TODO log if this truncation happens
+      // TODO allow the user to say the req should just fail
+      if (parameter.maxLength) {
+        // legit fine to be checking undef/null/0 here -- though i think it'd come out as 0? possibly even nan????
+        parameter.text = parameter.text.slice(0, parameter.maxLength);
+      }
+    }
+  }
+};
 
 const getAlreadyObjectStorageUrl = (text: string): string | null => {
   const objectStoragePrefix = `${getExternalUrlForBucket(
