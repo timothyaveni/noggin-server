@@ -26,7 +26,7 @@ export const streamResponse: StreamModelResponse = async (
   openRunStream(runId, {
     'Content-Type': 'text/html; charset=utf-8',
     'Transfer-Encoding': 'chunked',
-    'Keep-Alive': 'timeout=20, max=1000',
+    'Keep-Alive': 'timeout=90, max=1000',
   });
 
   const breadstick = modelParams.evaluated.prompt.includes('emoji')
