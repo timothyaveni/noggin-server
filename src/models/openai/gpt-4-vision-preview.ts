@@ -119,10 +119,19 @@ export const streamResponse: StreamModelResponse = async (
 
   let output = '';
 
-  for await (const chunk of stream) {
-    const partial = chunk.choices[0]?.delta?.content || '';
-    output += partial;
-    writeIncrementalContentToRunStream(runId, 'text', partial, chunk);
+  try {
+    for await (const chunk of stream) {
+      const partial = chunk.choices[0]?.delta?.content || '';
+      output += partial;
+      writeIncrementalContentToRunStream(runId, 'text', partial, chunk);
+    }
+  } catch (e: any) {
+    const message = e.message
+      ? 'Error from OpenAI API: ' + e.message
+      : 'Error from OpenAI API';
+
+    failRun(runId, message);
+    return;
   }
 
   const outputTokenCount = await countTextOutTokens(output);

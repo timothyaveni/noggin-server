@@ -13,7 +13,7 @@ import modelProviderIndex from './models/index.js';
 import { parseModelInputs } from './parseModelInputs.js';
 import { prisma } from './prisma.js';
 import { EditorSchema } from './reagent-noggin-shared/types/editorSchema.js';
-import { registerStream, writeLogToRunStream } from './runStreams.js';
+import { failRun, registerStream, writeLogToRunStream } from './runStreams.js';
 import { deserializeYDoc } from './y.js';
 
 const handleRequest = async (req: Request, res: Response) => {
@@ -120,6 +120,10 @@ const handleRequest = async (req: Request, res: Response) => {
         text: 'No API key was found in the HTTP request made to the noggin. All noggin uses must be authenticated.',
       },
     });
+    failRun(
+      run.id,
+      'No API key was found in the HTTP request made to the noggin. All noggin uses must be authenticated.',
+    );
     return sendStatus(400, { error: 'Missing key' });
   }
 
@@ -153,6 +157,7 @@ const handleRequest = async (req: Request, res: Response) => {
         reason: 'This key does not exist.',
       },
     });
+    failRun(run.id, 'The API key provided was not valid for this noggin.');
     return sendStatus(403, { error: 'Forbidden' });
   }
 
@@ -169,6 +174,7 @@ const handleRequest = async (req: Request, res: Response) => {
         otherNogginId: nogginApiKey.nogginId,
       },
     });
+    failRun(run.id, 'The API key provided was not valid for this noggin.');
     return sendStatus(403, { error: 'Forbidden' });
   }
 

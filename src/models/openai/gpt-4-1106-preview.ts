@@ -25,6 +25,7 @@ import {
 } from '../../reagent-noggin-shared/types/editorSchemaV1';
 import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables';
 import {
+  failRun,
   openRunStream,
   setIOVisualizationRenderForRunStream,
   succeedRun,
@@ -91,10 +92,19 @@ export const streamResponse: StreamModelResponse = async (
   };
 
   if (chosenOutputFormat.type === 'chat-text') {
-    const stream = await openai.chat.completions.create({
-      ...apiParams,
-      stream: true,
-    });
+    let stream;
+    try {
+      stream = await openai.chat.completions.create({
+        ...apiParams,
+        stream: true,
+      });
+    } catch (e: any) {
+      const message = e.message
+        ? 'Error from OpenAI API: ' + e.message
+        : 'Error from OpenAI API';
+      failRun(runId, `Error from the OpenAI API: ${message}`);
+      return;
+    }
 
     const inputTokenCount = await countChatInputTokens({
       chat: messages,
@@ -118,25 +128,33 @@ export const streamResponse: StreamModelResponse = async (
 
     let output = '';
 
-    for await (const chunk of stream) {
-      writeLogToRunStream(runId, {
-        level: 'debug',
-        stage: 'run_model',
-        message: {
-          type: 'model_chunk',
-          text: 'Model chunk',
-          chunk,
-        },
-      });
+    try {
+      for await (const chunk of stream) {
+        writeLogToRunStream(runId, {
+          level: 'debug',
+          stage: 'run_model',
+          message: {
+            type: 'model_chunk',
+            text: 'Model chunk',
+            chunk,
+          },
+        });
 
-      console.log(JSON.stringify(chunk, null, 2));
+        console.log(JSON.stringify(chunk, null, 2));
 
-      const partial = chunk.choices[0]?.delta?.content;
+        const partial = chunk.choices[0]?.delta?.content;
 
-      if (partial) {
-        output += partial;
-        writeIncrementalContentToRunStream(runId, 'text', partial, chunk);
+        if (partial) {
+          output += partial;
+          writeIncrementalContentToRunStream(runId, 'text', partial, chunk);
+        }
       }
+    } catch (e: any) {
+      const message = e.message
+        ? 'Error from OpenAI API: ' + e.message
+        : 'Error from OpenAI API';
+      failRun(runId, `Error from the OpenAI API: ${message}`);
+      return;
     }
 
     writeLogToRunStream(runId, {
@@ -203,24 +221,33 @@ export const streamResponse: StreamModelResponse = async (
       ),
     );
 
-    const result = await openai.chat.completions.create({
-      ...apiParams,
-      tools: [
-        {
+    let result;
+    try {
+      result = await openai.chat.completions.create({
+        ...apiParams,
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'respond',
+              parameters: gptSchema as FunctionParameters,
+            },
+          },
+        ],
+        tool_choice: {
           type: 'function',
           function: {
             name: 'respond',
-            parameters: gptSchema as FunctionParameters,
           },
         },
-      ],
-      tool_choice: {
-        type: 'function',
-        function: {
-          name: 'respond',
-        },
-      },
-    });
+      });
+    } catch (e: any) {
+      const message = e.message
+        ? 'Error from OpenAI API: ' + e.message
+        : 'Error from OpenAI API';
+      failRun(runId, `Error from the OpenAI API: ${message}`);
+      return;
+    }
 
     console.log(JSON.stringify(result, null, 2));
 

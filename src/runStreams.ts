@@ -198,6 +198,8 @@ export const failRun = (
   errorMessage: string,
   metadata: any = null,
 ) => {
+  console.error('failing run', runId, errorMessage);
+
   prisma
     .$transaction([
       prisma.nogginRunOutputEntry.create({
