@@ -1,10 +1,11 @@
 import { NogginRunLogEntryStage, NogginRunLogLevel } from '@prisma/client';
 
-export type LogArgs = {
+export type LogEntry = {
   level: NogginRunLogLevel;
   stage: NogginRunLogEntryStage;
-  message: any;
+  message: {
+    type: string;
+  } & Record<string, any>;
   privateData?: any;
+  timestamp?: number;
 };
-
-// export const logForRun = (runId: number) => async (log: LogArgs) => {};

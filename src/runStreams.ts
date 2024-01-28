@@ -1,8 +1,8 @@
 // this code may go into another server someday, e.g. synced with redis
 
-import { LogArgs } from './log';
 import { prisma } from './prisma.js';
 import { IOVisualizationRender } from './reagent-noggin-shared/io-visualization-types/IOVisualizationRender';
+import { LogEntry } from './reagent-noggin-shared/log';
 
 // TODO probably curry all of these to the runId. and rename, since they're less 'stream'y now that they also do the db writes
 
@@ -198,26 +198,28 @@ export const failRun = (
   errorMessage: string,
   metadata: any = null,
 ) => {
-  prisma.$transaction([
-    prisma.nogginRunOutputEntry.create({
-      data: {
-        entryTypeVersion: 1,
-        runId,
-        stage: 'final',
-        contentType: 'error',
-        content: errorMessage,
-        metadata,
-      },
-    }),
-    prisma.nogginRun.update({
-      where: {
-        id: runId,
-      },
-      data: {
-        status: 'failed',
-      },
-    }),
-  ]);
+  prisma
+    .$transaction([
+      prisma.nogginRunOutputEntry.create({
+        data: {
+          entryTypeVersion: 1,
+          runId,
+          stage: 'final',
+          contentType: 'error',
+          content: errorMessage,
+          metadata,
+        },
+      }),
+      prisma.nogginRun.update({
+        where: {
+          id: runId,
+        },
+        data: {
+          status: 'failed',
+        },
+      }),
+    ])
+    .then();
 
   const chunks = outputChunksForRun(runId);
   chunks.push({
@@ -236,26 +238,28 @@ export const succeedRun = (
   content: string,
   metadata: any = null,
 ) => {
-  prisma.$transaction([
-    prisma.nogginRunOutputEntry.create({
-      data: {
-        entryTypeVersion: 1,
-        runId,
-        stage: 'final',
-        contentType,
-        content,
-        metadata,
-      },
-    }),
-    prisma.nogginRun.update({
-      where: {
-        id: runId,
-      },
-      data: {
-        status: 'succeeded',
-      },
-    }),
-  ]);
+  prisma
+    .$transaction([
+      prisma.nogginRunOutputEntry.create({
+        data: {
+          entryTypeVersion: 1,
+          runId,
+          stage: 'final',
+          contentType,
+          content,
+          metadata,
+        },
+      }),
+      prisma.nogginRun.update({
+        where: {
+          id: runId,
+        },
+        data: {
+          status: 'succeeded',
+        },
+      }),
+    ])
+    .then();
 
   const chunks = outputChunksForRun(runId);
   chunks.push({
@@ -288,16 +292,28 @@ export const writeIncrementalContentToRunStream = (
   content: string,
   metadata?: any,
 ) => {
-  prisma.nogginRunOutputEntry.create({
-    data: {
-      contentType: 'text',
-      entryTypeVersion: 1,
-      stage: 'incremental',
-      runId,
-      content,
-      metadata,
+  writeLogToRunStream(runId, {
+    level: 'debug',
+    stage: 'run_model',
+    message: {
+      type: 'model_partial_output',
+      text: 'Model partial output',
+      output: content,
     },
   });
+
+  prisma.nogginRunOutputEntry
+    .create({
+      data: {
+        contentType: 'text',
+        entryTypeVersion: 1,
+        stage: 'incremental',
+        runId,
+        content,
+        metadata,
+      },
+    })
+    .then();
 
   const chunks = outputChunksForRun(runId);
 
@@ -311,17 +327,23 @@ export const writeIncrementalContentToRunStream = (
   flushAllStreamsForRun(runId);
 };
 
-export const writeLogToRunStream = (runId: number, logEvent: LogArgs) => {
-  prisma.nogginRunLogEntry.create({
-    data: {
-      runId,
-      entryTypeVersion: 1,
-      level: logEvent.level,
-      stage: logEvent.stage,
-      message: logEvent.message,
-      privateData: logEvent.privateData,
-    },
-  });
+export const writeLogToRunStream = (runId: number, logEvent: LogEntry) => {
+  const timestamp = +new Date();
+  logEvent.timestamp = timestamp;
+
+  prisma.nogginRunLogEntry
+    .create({
+      data: {
+        runId,
+        entryTypeVersion: 1,
+        level: logEvent.level,
+        stage: logEvent.stage,
+        message: logEvent.message,
+        privateData: logEvent.privateData,
+        timestamp: logEvent.timestamp,
+      },
+    })
+    .then();
 
   const userFacingLogEvent = { ...logEvent };
   delete userFacingLogEvent.privateData;

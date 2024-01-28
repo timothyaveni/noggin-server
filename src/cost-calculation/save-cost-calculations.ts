@@ -1,5 +1,6 @@
 import * as math from 'mathjs';
 import { prisma } from '../prisma.js';
+import { writeLogToRunStream } from '../runStreams.js';
 
 export const savePreliminaryCostEstimate = async (
   runId: number,
@@ -13,6 +14,16 @@ export const savePreliminaryCostEstimate = async (
     ),
     estimationMetadata: metadata,
   };
+
+  writeLogToRunStream(runId, {
+    level: 'info',
+    stage: 'anticipate_cost',
+    message: {
+      type: 'anticipate_cost',
+      estimatedCostQuastra: Number(update.estimatedCostQuastra),
+      estimationMetadata: metadata,
+    },
+  });
 
   await prisma.nogginRunCost.upsert({
     where: { nogginRunId: runId },
@@ -35,6 +46,16 @@ export const saveFinalCostCalculation = async (
     ),
     computationMetadata: metadata,
   };
+
+  writeLogToRunStream(runId, {
+    level: 'info',
+    stage: 'calculate_cost',
+    message: {
+      type: 'calculate_cost',
+      computedCostQuastra: Number(update.computedCostQuastra),
+      computationMetadata: metadata,
+    },
+  });
 
   await prisma.nogginRunCost.upsert({
     where: { nogginRunId: runId },

@@ -134,15 +134,6 @@ export const streamResponse: StreamModelResponse = async (
       const partial = chunk.choices[0]?.delta?.content;
 
       if (partial) {
-        writeLogToRunStream(runId, {
-          level: 'info',
-          stage: 'run_model',
-          message: {
-            type: 'model_partial_output',
-            text: 'Model partial output',
-            output: partial,
-          },
-        });
         output += partial;
         writeIncrementalContentToRunStream(runId, 'text', partial, chunk);
       }
