@@ -6,6 +6,7 @@ import {
   savePreliminaryCostEstimate,
 } from '../../cost-calculation/save-cost-calculations.js';
 import { createIOVisualizationForChatTextModel } from '../../createIOVisualization.js';
+import { unit } from '../../reagent-noggin-shared/cost-calculation/units.js';
 import {
   ModelInput_Integer_Value,
   ModelInput_Number_Value,
@@ -14,6 +15,7 @@ import {
 } from '../../reagent-noggin-shared/types/editorSchemaV1.js';
 import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables.js';
 import {
+  failRun,
   openRunStream,
   setIOVisualizationRenderForRunStream,
   succeedRun,
@@ -42,6 +44,7 @@ export const streamResponse: StreamModelResponse = async (
     credentialsVersion: 1;
     credentials: { apiToken: string };
   },
+  remainingBudget,
 ) => {
   const ioVisualizationRender = createIOVisualizationForChatTextModel(
     modelParams.partialEvaluated['chat-prompt'],
@@ -80,7 +83,25 @@ export const streamResponse: StreamModelResponse = async (
   }
 
   // TODO: pretty rough estimate. preliminary estimates should go over so we aren't likely to cap out a model's limit
-  savePreliminaryCostEstimate(runId, getReplicateCost('a40Large', 5));
+  const preliminaryCost = getReplicateCost('a40Large', 5);
+  savePreliminaryCostEstimate(runId, preliminaryCost);
+
+  if (
+    remainingBudget !== null &&
+    preliminaryCost.toNumber('quastra') > remainingBudget
+  ) {
+    failRun(
+      runId,
+      // TODO use a rounding function
+      `The anticipated cost of this operation exceeds the noggin's remaining budget. The anticipated cost is ${preliminaryCost.toNumber(
+        'credit',
+      )} and the remaining budget is ${unit(
+        remainingBudget,
+        'quastra',
+      ).toNumber('credit')}.`,
+    );
+    return;
+  }
 
   const output = (await replicate.run(
     'andreasjansson/llama-2-13b-chat-gguf:60ec5dda9ff9ee0b6f786c9d1157842e6ab3cc931139ad98fe99e08a35c5d4d4',

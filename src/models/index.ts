@@ -9,6 +9,8 @@ export type StreamModelResponse = (
   chosenOutputFormat: OutputFormat,
   runId: number,
   providerCredentials: any,
+  // also TODO: use unit here
+  remainingBudget: number | null, // TODO: definitely refactor this out when we add throwable failures and error handling
   {
     sendStatus,
   }: {

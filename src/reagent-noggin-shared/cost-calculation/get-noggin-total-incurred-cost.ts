@@ -5,7 +5,7 @@ export const getNogginTotalIncurredCost_OMNISCIENT = async (
   }: {
     nogginId: number;
   },
-) => {
+): Promise<number> => {
   // let's just do this in sql
   // of course don't love that this doesn't track with status, but such is life
   const [{ totalCost }] = (await prisma.$queryRaw`

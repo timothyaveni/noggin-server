@@ -1,6 +1,8 @@
 // this code may go into another server someday, e.g. synced with redis
 
+import { saveFinalCostCalculation } from './cost-calculation/save-cost-calculations.js';
 import { prisma } from './prisma.js';
+import { unit } from './reagent-noggin-shared/cost-calculation/units.js';
 import { IOVisualizationRender } from './reagent-noggin-shared/io-visualization-types/IOVisualizationRender';
 import { LogEntry } from './reagent-noggin-shared/log';
 
@@ -197,6 +199,7 @@ export const failRun = (
   runId: number,
   errorMessage: string,
   metadata: any = null,
+  chargeRun: boolean = false,
 ) => {
   console.error('failing run', runId, errorMessage);
 
@@ -222,6 +225,13 @@ export const failRun = (
       }),
     ])
     .then();
+
+  // if you want to charge, you'll have to save final cost calculation yourself
+  if (!chargeRun) {
+    saveFinalCostCalculation(runId, unit(0, 'credits'), {
+      type: 'run_failed',
+    }).then();
+  }
 
   const chunks = outputChunksForRun(runId);
   chunks.push({

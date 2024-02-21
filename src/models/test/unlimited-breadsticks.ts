@@ -6,6 +6,7 @@ import { unit } from '../../reagent-noggin-shared/cost-calculation/units.js';
 import { ModelInput_PlainTextWithVariables_Value } from '../../reagent-noggin-shared/types/editorSchemaV1.js';
 import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables.js';
 import {
+  failRun,
   openRunStream,
   succeedRun,
   writeIncrementalContentToRunStream,
@@ -19,8 +20,10 @@ type UnevaluatedModelParams = {
 
 export const streamResponse: StreamModelResponse = async (
   modelParams: ModelParamsForStreamResponse<UnevaluatedModelParams>,
-  chosenOutputFormat,
+  _chosenOutputFormat,
   runId: number,
+  _providerCredentials: any,
+  remainingBudget,
 ) => {
   // TODO: probably extract these into a function
   openRunStream(runId, {
@@ -40,8 +43,24 @@ export const streamResponse: StreamModelResponse = async (
   const delay = 100;
 
   const runCost = modelCost.multiply(unit(breadstickCount, 'outtoken'));
-
   savePreliminaryCostEstimate(runId, runCost);
+
+  if (
+    remainingBudget !== null &&
+    runCost.toNumber('quastra') > remainingBudget
+  ) {
+    failRun(
+      runId,
+      // TODO use a rounding function
+      `The anticipated cost of this operation exceeds the noggin's remaining budget. The anticipated cost is ${runCost.toNumber(
+        'credit',
+      )} and the remaining budget is ${unit(
+        remainingBudget,
+        'quastra',
+      ).toNumber('credit')}.`,
+    );
+    return;
+  }
 
   let output = '';
   for (let i = 0; i < breadstickCount; i++) {

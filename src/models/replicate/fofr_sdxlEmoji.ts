@@ -15,6 +15,7 @@ import {
 } from '../../cost-calculation/save-cost-calculations.js';
 import { createIOVisualizationForImageOutputModel } from '../../createIOVisualization.js';
 import { createAssetInBucket } from '../../object-storage/createAssetInBucket.js';
+import { unit } from '../../reagent-noggin-shared/cost-calculation/units.js';
 import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
 import {
   ModelInput_Integer_Value,
@@ -38,6 +39,7 @@ export const streamResponse: StreamModelResponse = async (
     credentialsVersion: 1;
     credentials: { apiToken: string };
   },
+  remainingBudget,
   { sendStatus },
 ) => {
   const ioVisualization = createIOVisualizationForImageOutputModel(
@@ -61,7 +63,25 @@ export const streamResponse: StreamModelResponse = async (
     num_inference_steps: modelParams.evaluated['inference-steps'],
   };
 
-  savePreliminaryCostEstimate(runId, getReplicateCost('a40Large', 16));
+  const preliminaryCost = getReplicateCost('a40Large', 16);
+  savePreliminaryCostEstimate(runId, preliminaryCost);
+
+  if (
+    remainingBudget !== null &&
+    preliminaryCost.toNumber('quastra') > remainingBudget
+  ) {
+    failRun(
+      runId,
+      // TODO use a rounding function
+      `The anticipated cost of this operation exceeds the noggin's remaining budget. The anticipated cost is ${preliminaryCost.toNumber(
+        'credit',
+      )} and the remaining budget is ${unit(
+        remainingBudget,
+        'quastra',
+      ).toNumber('credit')}.`,
+    );
+    return;
+  }
 
   let output: string[];
   try {

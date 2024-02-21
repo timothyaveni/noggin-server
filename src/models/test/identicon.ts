@@ -35,6 +35,7 @@ export const streamResponse: StreamModelResponse = async (
     credentialsVersion: 1;
     credentials: { apiToken: string };
   },
+  remainingBudget,
   { sendStatus },
 ) => {
   const ioVisualization = createIOVisualizationForImageOutputModel(
@@ -43,7 +44,25 @@ export const streamResponse: StreamModelResponse = async (
 
   await setIOVisualizationRenderForRunStream(runId, ioVisualization);
 
-  savePreliminaryCostEstimate(runId, unit(0, 'credits'));
+  const preliminaryCost = unit(0, 'credits');
+  savePreliminaryCostEstimate(runId, preliminaryCost);
+
+  if (
+    remainingBudget !== null &&
+    preliminaryCost.toNumber('quastra') > remainingBudget
+  ) {
+    failRun(
+      runId,
+      // TODO use a rounding function
+      `The anticipated cost of this operation exceeds the noggin's remaining budget. The anticipated cost is ${preliminaryCost.toNumber(
+        'credit',
+      )} and the remaining budget is ${unit(
+        remainingBudget,
+        'quastra',
+      ).toNumber('credit')}.`,
+    );
+    return;
+  }
 
   const sha1 = createHash('sha1');
   sha1.update(modelParams.evaluated.prompt);

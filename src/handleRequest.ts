@@ -12,6 +12,7 @@ import inferNogginSlug from './inferNogginSlug.js';
 import modelProviderIndex from './models/index.js';
 import { parseModelInputs } from './parseModelInputs.js';
 import { prisma } from './prisma.js';
+import { getNogginTotalIncurredCost_OMNISCIENT } from './reagent-noggin-shared/cost-calculation/get-noggin-total-incurred-cost.js';
 import { EditorSchema } from './reagent-noggin-shared/types/editorSchema.js';
 import { failRun, registerStream, writeLogToRunStream } from './runStreams.js';
 import { deserializeYDoc } from './y.js';
@@ -56,6 +57,7 @@ const handleRequest = async (req: Request, res: Response) => {
     select: {
       id: true,
       aiModelId: true,
+      totalAllocatedCreditQuastra: true,
     },
   });
 
@@ -176,6 +178,33 @@ const handleRequest = async (req: Request, res: Response) => {
     });
     failRun(run.id, 'The API key provided was not valid for this noggin.');
     return sendStatus(403, { error: 'Forbidden' });
+  }
+
+  const usedBudget = await getNogginTotalIncurredCost_OMNISCIENT(prisma, {
+    nogginId: noggin.id,
+  });
+
+  const remainingBudget =
+    noggin.totalAllocatedCreditQuastra === null
+      ? null
+      : Number(noggin.totalAllocatedCreditQuastra) - usedBudget;
+
+  if (remainingBudget !== null && remainingBudget <= 0) {
+    writeLogToRunStream(run.id, {
+      level: 'error',
+      stage: 'anticipate_cost',
+      message: {
+        type: 'budget_exceeded',
+        text: 'This noggin has no remaining budget.',
+      },
+      privateData: {
+        totalBudget: noggin.totalAllocatedCreditQuastra,
+        usedBudget,
+        remainingBudget,
+      },
+    });
+    failRun(run.id, 'The noggin has no remaining budget.');
+    return sendStatus(400, { error: 'Bad request' });
   }
 
   const { editorSchema, modelName, revision, modelProviderName } =
@@ -340,6 +369,7 @@ const handleRequest = async (req: Request, res: Response) => {
     chosenOutputFormat,
     run.id,
     providerCredentials,
+    remainingBudget,
     {
       sendStatus, // todo refactor this out
     },
