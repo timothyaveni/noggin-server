@@ -26,22 +26,13 @@ export const getProviderCredentialsForNoggin_OMNISCIENT = async (
     throw new Error('Noggin not found');
   }
 
+  let providerCredentials = null;
   if (noggin.parentOrgId) {
-    throw new Error(
-      'Noggin is not owned by a user -- org billing not yet implemented',
-    );
-  }
-
-  if (!noggin.userOwnerId) {
-    throw new Error('????? no user id on noggin');
-  }
-
-  const providerCredentials =
-    await prisma.modelProviderPersonalCredentials.findUnique({
+    providerCredentials = await prisma.modelProviderOrgCredentials.findUnique({
       where: {
-        modelProviderId_userId_credentialsVersion: {
+        modelProviderId_organizationId_credentialsVersion: {
           modelProviderId: noggin.aiModel.modelProvider.id,
-          userId: noggin.userOwnerId,
+          organizationId: noggin.parentOrgId,
           credentialsVersion:
             noggin.aiModel.modelProvider.credentialsSchemaVersion,
         },
@@ -51,6 +42,31 @@ export const getProviderCredentialsForNoggin_OMNISCIENT = async (
         credentialsVersion: true,
       },
     });
+  } else {
+    if (!noggin.userOwnerId) {
+      throw new Error('????? no user id on noggin');
+    }
+
+    providerCredentials =
+      await prisma.modelProviderPersonalCredentials.findUnique({
+        where: {
+          modelProviderId_userId_credentialsVersion: {
+            modelProviderId: noggin.aiModel.modelProvider.id,
+            userId: noggin.userOwnerId,
+            credentialsVersion:
+              noggin.aiModel.modelProvider.credentialsSchemaVersion,
+          },
+        },
+        select: {
+          credentials: true,
+          credentialsVersion: true,
+        },
+      });
+  }
+
+  if (!providerCredentials) {
+    throw new Error('Provider credentials not found');
+  }
 
   return {
     providerCredentials,
