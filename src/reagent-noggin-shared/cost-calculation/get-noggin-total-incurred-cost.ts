@@ -20,3 +20,31 @@ export const getNogginTotalIncurredCost_OMNISCIENT = async (
 
   return totalCost || 0;
 };
+
+export const getTotalOrganizationSpendForUser_OMNISCIENT = async (
+  prisma: any,
+  {
+    organizationId,
+    userId,
+  }: {
+    organizationId: number;
+    userId: number;
+  },
+): Promise<number> => {
+  const [{ totalCost }] = (await prisma.$queryRaw`
+    select
+      sum(coalesce("NogginRunCost"."computedCostQuastra", "NogginRunCost"."estimatedCostQuastra", 0)) as "totalCost"
+    from "NogginRun"
+    inner join "NogginRunCost" on "NogginRun"."id" = "NogginRunCost"."nogginRunId"
+    inner join "NogginRevision" on "NogginRun"."nogginRevisionId" = "NogginRevision"."id"
+    inner join "Noggin" on "NogginRevision"."nogginId" = "Noggin"."id"
+    where "NogginRun"."nogginRevisionId" in (
+      select id from "NogginRevision" where "NogginRevision"."nogginId" in (
+        select id from "Noggin" where "Noggin"."parentOrgId" = ${organizationId}
+      )
+    )
+    and "Noggin"."userOwnerId" = ${userId}
+  `) as { totalCost: number }[];
+
+  return totalCost || 0;
+};

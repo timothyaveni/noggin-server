@@ -64,10 +64,6 @@ export const getProviderCredentialsForNoggin_OMNISCIENT = async (
       });
   }
 
-  if (!providerCredentials) {
-    throw new Error('Provider credentials not found');
-  }
-
   return {
     providerCredentials,
     needsCredentials: noggin.aiModel.modelProvider.needsCredentials,
