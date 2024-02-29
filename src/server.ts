@@ -67,7 +67,12 @@ app.post(
     return next();
   },
   async (req, res) => {
-    handleRequest(req, res);
+    try {
+      handleRequest(req, res);
+    } catch (e) {
+      console.error('Error handling request', e);
+      res.status(500).send('Internal server error');
+    }
   },
 );
 
