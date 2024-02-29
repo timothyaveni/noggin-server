@@ -210,6 +210,46 @@ export const streamResponse: StreamModelResponse = async (
   } else if (chosenOutputFormat.type === 'structured-data') {
     const outputStructureSchema = modelParams.evaluated['output-structure'];
 
+    // TODO oh god not dry at all
+    const inputTokenCount = await countChatInputTokens({
+      chat: messages,
+      // tools: null,
+      // TODO: tools later. for now assume no tools, but we'll fix the pricing when it responds
+    });
+
+    const outputTokenLengthEstimate = unit(
+      modelParams.evaluated['maximum-completion-length'] || 4095,
+      'outtokens',
+    );
+
+    const preliminaryCost = getOpenAiChatCompletionCost(
+      'gpt-3.5-turbo-1106',
+      inputTokenCount,
+      outputTokenLengthEstimate,
+    );
+
+    savePreliminaryCostEstimate(runId, preliminaryCost, {
+      inputTokenCount,
+      outputTokenLengthEstimate,
+    });
+
+    if (
+      remainingBudget !== null &&
+      preliminaryCost.toNumber('quastra') > remainingBudget
+    ) {
+      failRun(
+        runId,
+        // TODO use a rounding function
+        `The anticipated cost of this operation exceeds the noggin's remaining budget. The anticipated cost is ${preliminaryCost.toNumber(
+          'credit',
+        )} and the remaining budget is ${unit(
+          remainingBudget,
+          'quastra',
+        ).toNumber('credit')}.`,
+      );
+      return;
+    }
+
     let gptSchema;
     let needsUnwrap = false;
 
@@ -276,6 +316,24 @@ export const streamResponse: StreamModelResponse = async (
     }
 
     console.log(JSON.stringify(result, null, 2));
+
+    const trueInputTokens = result.usage?.prompt_tokens;
+    const trueOutputTokens = result.usage?.completion_tokens;
+
+    if (trueInputTokens != null && trueOutputTokens != null) {
+      const finalCost = getOpenAiChatCompletionCost(
+        'gpt-3.5-turbo-1106',
+        unit(trueInputTokens, 'intokens'),
+        unit(trueOutputTokens, 'outtokens'),
+      );
+
+      saveFinalCostCalculation(runId, finalCost, {
+        trueInputTokens,
+        trueOutputTokens,
+      });
+    } else {
+      // just use the estimate, it's fine
+    }
 
     let output =
       result.choices[0].message.tool_calls?.[0].function.arguments || '{}';
