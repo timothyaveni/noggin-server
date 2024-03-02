@@ -30,6 +30,7 @@ export const parseModelInputs = (
           yTextToSlateElement(modelInputsMap.get(inputKey, Y.XmlText)),
         );
         break;
+      case 'image':
       case 'integer':
       case 'number':
       case 'boolean':

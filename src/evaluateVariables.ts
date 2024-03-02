@@ -7,6 +7,7 @@ import { EditorSchema } from './reagent-noggin-shared/types/editorSchema';
 import {
   ModelInputValues,
   ModelInput_Boolean_Value,
+  ModelInput_Image_Value,
   ModelInput_Integer_Value,
   ModelInput_Number_Value,
   ModelInput_PlainTextWithVariables_Value,
@@ -63,6 +64,11 @@ export const evaluateVariablesInModelInputs = (
           parameters,
         );
         break;
+      case 'image':
+        thisModelInputValue = partialEvaluatedModelInputValues[
+          inputKey
+        ] as ModelInput_Image_Value;
+        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no params just yet
       case 'integer':
         thisModelInputValue = partialEvaluatedModelInputValues[
           inputKey

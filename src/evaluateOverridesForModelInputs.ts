@@ -48,6 +48,7 @@ export function evaluateOverridesForModelInputs<T extends ModelInputs>(
       case 'chat-text-user-images-with-parameters':
       case 'chat-text-with-parameters':
       case 'plain-text-with-parameters':
+      case 'image':
       case 'boolean':
       case 'select':
       case 'simple-schema':

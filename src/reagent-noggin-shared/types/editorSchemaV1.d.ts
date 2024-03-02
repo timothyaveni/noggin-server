@@ -79,6 +79,13 @@ interface ModelInput_ChatTextWithVariables extends ModelInputBase {
   editorHeight?: EditorHeight;
 }
 
+interface ModelInput_Image extends ModelInputBase {
+  type: 'image';
+  default?: ModelInput_Image_Value;
+}
+
+type ModelInput_Image_Value = string;
+
 type ModelInput_Number_Value = number;
 
 interface ModelInput_Number extends ModelInputBase {
@@ -127,6 +134,7 @@ interface ModelInput_SimpleSchema extends ModelInputBase {
 export type ModelInput_Value =
   | ModelInput_PlainTextWithVariables_Value
   | ModelInput_StandardChatWithVariables_Value
+  | ModelInput_Image_Value
   | ModelInput_Number_Value
   | ModelInput_Integer_Value
   | ModelInput_Boolean_Value
@@ -137,6 +145,7 @@ export type ModelInput =
   | ModelInput_PlainTextWithVariables
   | ModelInput_ChatTextUserImagesWithVariables
   | ModelInput_ChatTextWithVariables
+  | ModelInput_Image
   | ModelInput_Number
   | ModelInput_Integer
   | ModelInput_Boolean
@@ -150,6 +159,8 @@ export type ModelInput_Value_for_ModelInput<T> =
     ? ModelInput_StandardChatWithVariables_Value
     : T extends ModelInput_ChatTextWithVariables
     ? ModelInput_StandardChatWithVariables_Value
+    : T extends ModelInput_Image
+    ? ModelInput_Image_Value
     : T extends ModelInput_Number
     ? ModelInput_Number_Value
     : T extends ModelInput_Integer

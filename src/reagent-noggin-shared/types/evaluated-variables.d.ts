@@ -1,6 +1,7 @@
 import { JSONSchema7 } from 'json-schema';
 import {
   ModelInput_Boolean_Value,
+  ModelInput_Image_Value,
   ModelInput_Integer_Value,
   ModelInput_Number_Value,
   ModelInput_PlainTextWithVariables_Value,
@@ -44,8 +45,10 @@ type EvaluatedModelInput_Value<T extends ModelInput_Value> =
     ? string
     : T extends ModelInput_StandardChatWithVariables_Value
     ? EvaluatedStandardChat
+    : T extends ModelInput_Image_Value
+    ? string
     : T extends ModelInput_Select_Value
-    ? string | string[]
+    ? string | string[] // todo: this doesn't actually work, lol, duh, i did notice this was suspicious bc of structural typing
     : never;
 
 export type EvaluatedModelInputs<T extends Record<string, ModelInput_Value>> = {
