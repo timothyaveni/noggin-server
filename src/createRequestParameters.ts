@@ -51,12 +51,14 @@ const getRequestParametersFromRequest = (
       modelInputValue, // right okay we also do it here, not just in evaluateOverrides... don't love it
       editorSchema,
     );
-    if (modelInputValue) {
-      documentVariablesWithOverrides[documentVariable.id] =
-        documentVariable.variable;
-    } else {
-      // ???
-    }
+    // cannot for the life of me remember why i added this conditional
+    // but it did break things!
+    // if (modelInputValue) {
+    documentVariablesWithOverrides[documentVariable.id] =
+      documentVariable.variable;
+    // } else {
+    // ???
+    // }
   }
 
   for (const parameterKey of Object.keys(documentVariablesWithOverrides)) {
