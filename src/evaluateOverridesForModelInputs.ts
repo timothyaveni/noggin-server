@@ -45,10 +45,18 @@ export function evaluateOverridesForModelInputs<T extends ModelInputs>(
           clonedModelInputValues[key] = modelInputValues[key];
         }
         break;
+      case 'image':
+        if (requestParameters[key] !== undefined) {
+          // @ts-ignore
+          clonedModelInputValues[key] = requestParameters[key];
+        } else {
+          // @ts-ignore
+          clonedModelInputValues[key] = modelInputValues[key]; // here we're using the default value that (at present) is NOT making it into params, i think
+        }
+        break;
       case 'chat-text-user-images-with-parameters':
       case 'chat-text-with-parameters':
       case 'plain-text-with-parameters':
-      case 'image':
       case 'boolean':
       case 'select':
       case 'simple-schema':

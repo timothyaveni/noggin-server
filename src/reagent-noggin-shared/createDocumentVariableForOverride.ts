@@ -9,6 +9,7 @@ export const overridableModelInputTypes = {
 
   integer: true,
   number: true,
+  image: true,
 
   // for now:
   boolean: false,
@@ -16,7 +17,7 @@ export const overridableModelInputTypes = {
 };
 
 export const overridableModelInputTypeMap: {
-  [key: string]: 'integer' | 'number' | null;
+  [key: string]: 'integer' | 'number' | 'image' | null;
 } = {
   'chat-text-user-images-with-parameters': null,
   'chat-text-with-parameters': null,
@@ -25,6 +26,7 @@ export const overridableModelInputTypeMap: {
 
   integer: 'integer',
   number: 'number',
+  image: 'image',
 
   boolean: null,
   select: null,
@@ -59,6 +61,16 @@ export const createDocumentVariableForOverride = (
           name: overrideKey,
           type: 'number',
           defaultValue,
+        },
+      };
+    case 'image':
+      return {
+        id: overrideKey,
+        variable: {
+          name: overrideKey,
+          type: 'image',
+          // TODO no default value is a little awkward here
+          openAI_detail: 'auto', // this is REAL awkward, we've outgrown openAI_detail
         },
       };
     default:
