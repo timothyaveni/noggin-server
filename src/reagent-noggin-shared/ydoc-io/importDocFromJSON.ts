@@ -43,6 +43,13 @@ export const importDocFromObject = (
     }
   }
 
+  const yDocOverridableModelInputKeysArray = yDoc.getArray(
+    'overridableModelInputKeys',
+  );
+  for (const key of obj.overridableModelInputKeys) {
+    yDocOverridableModelInputKeysArray.push([key]);
+  }
+
   const yDocDocumentParametersMap = yDoc.getMap('documentParameters');
   // todo hm maybe we should do this recursively in case parameters become objects in the future... the frontend syncedStore lib does this automatically
   for (const key of Object.keys(obj.documentParameters)) {

@@ -32,6 +32,9 @@ export const exportDocToObject = (
 
   const jsonDoc: JSONDocType = {
     modelInputs,
+    overridableModelInputKeys: doc
+      .getArray<string>('overridableModelInputKeys')
+      .toArray(),
     documentParameters: doc.getMap('documentParameters').toJSON(),
     documentParameterIdsByDocument: doc
       .getMap('documentParameterIdsByDocument')

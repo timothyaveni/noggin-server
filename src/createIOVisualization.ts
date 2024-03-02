@@ -33,6 +33,26 @@ const createHypertextFromTextWithVariables = (
             },
             variableEvaluationNotes: [],
           } as IOVisualizationHyperTextElement_EvaluatedVariable;
+        } else if (text.evaluated!.variableType === 'number') {
+          return {
+            type: 'variable',
+            variableName: text.evaluated!.variableName,
+            variableEvaluatedValue: {
+              type: 'text',
+              text: text.evaluated!.variableValue.number.toString(),
+            },
+            variableEvaluationNotes: [],
+          };
+        } else if (text.evaluated!.variableType === 'integer') {
+          return {
+            type: 'variable',
+            variableName: text.evaluated!.variableName,
+            variableEvaluatedValue: {
+              type: 'text',
+              text: text.evaluated!.variableValue.integer.toString(),
+            },
+            variableEvaluationNotes: [],
+          };
         } else if (text.evaluated!.variableType === 'image') {
           return {
             type: 'variable',

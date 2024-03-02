@@ -4,6 +4,7 @@ import { v4 as uuid } from 'uuid';
 import * as Y from 'yjs';
 
 import { createRequestParameters } from './createRequestParameters.js';
+import { evaluateOverridesForModelInputs } from './evaluateOverridesForModelInputs.js';
 import { evaluateVariablesInModelInputs } from './evaluateVariables.js';
 import { getProviderCredentialsForNoggin_OMNISCIENT } from './getCredentials.js';
 import inferIntent from './inferIntent.js';
@@ -13,7 +14,9 @@ import modelProviderIndex from './models/index.js';
 import { parseModelInputs } from './parseModelInputs.js';
 import { prisma } from './prisma.js';
 import { getNogginTotalIncurredCost_OMNISCIENT } from './reagent-noggin-shared/cost-calculation/get-noggin-total-incurred-cost.js';
+import { DocumentVariables } from './reagent-noggin-shared/types/DocType.js';
 import { EditorSchema } from './reagent-noggin-shared/types/editorSchema.js';
+import { ModelInputValues } from './reagent-noggin-shared/types/editorSchemaV1.js';
 import { failRun, registerStream, writeLogToRunStream } from './runStreams.js';
 import { deserializeYDoc } from './y.js';
 
@@ -247,14 +250,20 @@ const handleRequest = async (req: Request, res: Response) => {
 
   const yDoc = deserializeYDoc(nogginRevision.content);
 
-  const parsedModelInputs = parseModelInputs(
+  const parsedModelInputs: ModelInputValues = parseModelInputs(
     yDoc.get('modelInputs', Y.Map),
     editorSchema,
   );
 
+  const overridableModelInputKeys: (keyof ModelInputValues)[] = yDoc
+    .get('overridableModelInputKeys', Y.Array)
+    .toJSON();
+
   console.log(parsedModelInputs);
 
-  const documentVariables = yDoc.get('documentParameters', Y.Map).toJSON();
+  const documentVariables: DocumentVariables = yDoc
+    .get('documentParameters', Y.Map)
+    .toJSON();
 
   const nogginOptions = yDoc.get('nogginOptions', Y.Map).toJSON();
 
@@ -263,10 +272,12 @@ const handleRequest = async (req: Request, res: Response) => {
     run.id,
     req,
     documentVariables,
+    parsedModelInputs,
+    overridableModelInputKeys,
+    editorSchema,
   );
-  // TODO allow overrides too, i guess
 
-  const {
+  let {
     partialEvaluated: partialEvaluatedModelInputs,
     evaluated: evaluatedModelParams,
   } = evaluateVariablesInModelInputs(
@@ -274,6 +285,15 @@ const handleRequest = async (req: Request, res: Response) => {
     editorSchema,
     documentVariables,
     requestParameters,
+  );
+
+  // TODO this could also go in the function above. hard to say
+  // TODO: should we bring the partial in here too? not clear
+  evaluatedModelParams = evaluateOverridesForModelInputs(
+    editorSchema.allEditorComponents,
+    evaluatedModelParams,
+    requestParameters,
+    overridableModelInputKeys,
   );
 
   // todo maybe a timeout on this side before we call into the model code?

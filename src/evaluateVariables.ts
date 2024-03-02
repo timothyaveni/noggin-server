@@ -1,5 +1,11 @@
+import { RequestParameters } from './createRequestParameters';
+import {
+  DocumentVariable,
+  DocumentVariables,
+} from './reagent-noggin-shared/types/DocType';
 import { EditorSchema } from './reagent-noggin-shared/types/editorSchema';
 import {
+  ModelInputValues,
   ModelInput_Boolean_Value,
   ModelInput_Integer_Value,
   ModelInput_Number_Value,
@@ -8,24 +14,29 @@ import {
   ModelInput_SimpleSchema_Value,
   ModelInput_StandardChatWithVariables_Value,
   ModelInput_Value,
+  TextOrVariable,
 } from './reagent-noggin-shared/types/editorSchemaV1';
 import {
   EvaluatedContentChunk,
   EvaluatedModelInput_Value,
   EvaluatedModelInputs,
   EvaluatedStandardChat,
+  EvaluatedTextChunk,
 } from './reagent-noggin-shared/types/evaluated-variables';
 
 export const evaluateVariablesInModelInputs = (
-  modelInputs: Record<string, ModelInput_Value>,
+  modelInputValues: ModelInputValues,
   editorSchema: EditorSchema,
-  documentParameters: any,
-  parameters: any,
+  documentVariables: DocumentVariables,
+  // TODO: create document variables for overridden inputs
+  parameters: RequestParameters,
 ) => {
-  const partialEvaluatedModelInputs = JSON.parse(
-    JSON.stringify(modelInputs),
-  ) as typeof modelInputs; // todo of course. just rather not do the whole thing immutable
-  const evaluatedModelInputs: EvaluatedModelInputs<typeof modelInputs> = {};
+  const partialEvaluatedModelInputValues = JSON.parse(
+    JSON.stringify(modelInputValues),
+  ) as typeof modelInputValues; // todo of course. just rather not do the whole thing immutable
+  const evaluatedModelInputValues: EvaluatedModelInputs<
+    typeof modelInputValues
+  > = {};
 
   for (const inputKey of Object.keys(editorSchema.allEditorComponents)) {
     const input = editorSchema.allEditorComponents[inputKey];
@@ -33,54 +44,54 @@ export const evaluateVariablesInModelInputs = (
     switch (input.type) {
       case 'chat-text-user-images-with-parameters':
       case 'chat-text-with-parameters':
-        thisModelInputValue = partialEvaluatedModelInputs[
+        thisModelInputValue = partialEvaluatedModelInputValues[
           inputKey
         ] as ModelInput_StandardChatWithVariables_Value;
-        evaluatedModelInputs[inputKey] = evaluateVariablesInChatText(
+        evaluatedModelInputValues[inputKey] = evaluateVariablesInChatText(
           thisModelInputValue,
-          documentParameters,
+          documentVariables,
           parameters,
         );
         break;
       case 'plain-text-with-parameters':
-        thisModelInputValue = partialEvaluatedModelInputs[
+        thisModelInputValue = partialEvaluatedModelInputValues[
           inputKey
         ] as ModelInput_PlainTextWithVariables_Value;
-        evaluatedModelInputs[inputKey] = evaluateVariablesInPlainText(
+        evaluatedModelInputValues[inputKey] = evaluateVariablesInPlainText(
           thisModelInputValue,
-          documentParameters,
+          documentVariables,
           parameters,
         );
         break;
       case 'integer':
-        thisModelInputValue = partialEvaluatedModelInputs[
+        thisModelInputValue = partialEvaluatedModelInputValues[
           inputKey
         ] as ModelInput_Integer_Value;
-        evaluatedModelInputs[inputKey] = thisModelInputValue; // no params just yet
+        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no params just yet
         break;
       case 'number':
-        thisModelInputValue = partialEvaluatedModelInputs[
+        thisModelInputValue = partialEvaluatedModelInputValues[
           inputKey
         ] as ModelInput_Number_Value;
-        evaluatedModelInputs[inputKey] = thisModelInputValue; // no params just yet
+        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no params just yet
         break;
       case 'boolean':
-        thisModelInputValue = partialEvaluatedModelInputs[
+        thisModelInputValue = partialEvaluatedModelInputValues[
           inputKey
         ] as ModelInput_Boolean_Value;
-        evaluatedModelInputs[inputKey] = thisModelInputValue; // no params just yet
+        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no params just yet
         break;
       case 'select':
-        thisModelInputValue = partialEvaluatedModelInputs[
+        thisModelInputValue = partialEvaluatedModelInputValues[
           inputKey
         ] as ModelInput_Select_Value;
-        evaluatedModelInputs[inputKey] = thisModelInputValue; // no params just yet
+        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no params just yet
         break;
       case 'simple-schema':
-        thisModelInputValue = partialEvaluatedModelInputs[
+        thisModelInputValue = partialEvaluatedModelInputValues[
           inputKey
         ] as ModelInput_SimpleSchema_Value;
-        evaluatedModelInputs[inputKey] = thisModelInputValue; // no params just yet
+        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no params just yet
         break;
       default:
         const _exhaustiveCheck: never = input;
@@ -88,15 +99,15 @@ export const evaluateVariablesInModelInputs = (
   }
 
   return {
-    partialEvaluated: partialEvaluatedModelInputs,
-    evaluated: evaluatedModelInputs,
+    partialEvaluated: partialEvaluatedModelInputValues,
+    evaluated: evaluatedModelInputValues,
   };
 };
 
 export const evaluateVariablesInChatText = (
   chatText: ModelInput_StandardChatWithVariables_Value,
-  documentParameters: any,
-  parameters: any,
+  documentVariables: DocumentVariables,
+  parameters: RequestParameters,
 ): EvaluatedModelInput_Value<ModelInput_StandardChatWithVariables_Value> => {
   const newChatText: EvaluatedStandardChat = [];
 
@@ -109,62 +120,9 @@ export const evaluateVariablesInChatText = (
     };
 
     for (const chunk of turn.text) {
-      switch (chunk.type) {
-        case 'text':
-          contentChunks.push({ type: 'text', text: chunk.text });
-          break;
-        case 'parameter':
-          const parameterType = documentParameters[chunk.parameterId].type;
-
-          switch (parameterType) {
-            case 'text':
-              const textEvaluatedValue =
-                parameters[chunk.parameterId] ||
-                documentParameters[chunk.parameterId].defaultValue;
-              chunk.evaluated = {
-                variableType: 'text',
-                variableName: documentParameters[chunk.parameterId].name,
-                variableValue: {
-                  text: textEvaluatedValue,
-                },
-              };
-              contentChunks.push({
-                type: 'text',
-                text: textEvaluatedValue,
-              });
-              break;
-            case 'image':
-              const imageEvaluatedValue: {
-                url: string;
-                openAI_detail: 'low' | 'high' | 'auto';
-              } = {
-                url: parameters[chunk.parameterId] || '', // TODO: not sure i'm digging the return type of 'parameters'. also, the empty string should trigger a warning
-                openAI_detail:
-                  documentParameters[chunk.parameterId].openAI_detail, // yeah that's not gonna work
-              };
-              chunk.evaluated = {
-                variableType: 'image',
-                variableName: documentParameters[chunk.parameterId].name,
-                variableValue: imageEvaluatedValue,
-              };
-              contentChunks.push({
-                type: 'image_url',
-                image_url: imageEvaluatedValue,
-              });
-              break;
-            default:
-              // throw new Error('Unknown parameter type ' + parameterType);
-              // TODO log an error
-              break;
-          }
-          break;
-        // case 'inline-image':
-        //   throw new Error('Not implemented'); // TODO
-        default:
-          // throw new Error('Unknown chunk type ' + chunk.type);
-          // TODO log an error. we can't be throwing, it crashes the whole server... probably something we should fix anyway...
-          break;
-      }
+      contentChunks.push(
+        evaluateAndMutateChunk(parameters, documentVariables, chunk),
+      );
     }
 
     newChatText.push(newTurn);
@@ -173,38 +131,114 @@ export const evaluateVariablesInChatText = (
   return newChatText;
 };
 
-// TODO: dry it out
-export const evaluateVariablesInPlainText = (
-  plainText: ModelInput_PlainTextWithVariables_Value,
-  documentParameters: any,
-  parameters: any,
-): EvaluatedModelInput_Value<ModelInput_PlainTextWithVariables_Value> => {
-  let newPlainText = '';
+// we mutate the chunk as well as evaluating it so we can keep this link around for IO visualization rendering
+function evaluateAndMutateChunk(
+  parameters: RequestParameters,
+  documentVariables: DocumentVariables,
+  chunk: TextOrVariable,
+): EvaluatedContentChunk {
+  switch (chunk.type) {
+    case 'text':
+      return { type: 'text', text: chunk.text };
+    case 'parameter':
+      const documentVariableSpec: DocumentVariable =
+        documentVariables[chunk.parameterId];
 
-  // console.log('pt', plainText)
-  for (const chunk of plainText) {
-    switch (chunk.type) {
-      case 'text':
-        newPlainText += chunk.text;
-        break;
-      case 'parameter':
-        const textEvaluatedValue =
-          parameters[chunk.parameterId] ||
-          documentParameters[chunk.parameterId].defaultValue;
-        chunk.evaluated = {
-          variableType: 'text',
-          variableName: documentParameters[chunk.parameterId].name,
-          variableValue: {
+      switch (documentVariableSpec.type) {
+        case 'text':
+          const textEvaluatedValue =
+            parameters[chunk.parameterId] || documentVariableSpec.defaultValue;
+          chunk.evaluated = {
+            variableType: 'text',
+            variableName: documentVariableSpec.name,
+            variableValue: {
+              text: textEvaluatedValue,
+            },
+          };
+          return {
+            type: 'text',
             text: textEvaluatedValue,
-          },
-        };
-        newPlainText += textEvaluatedValue;
-        break;
-      default:
-        // @ts-expect-error this could still happen at runtime, since it's i/o
-        throw new Error('Unknown chunk type ' + chunk.type); // todo but don't throw lol (see above)
-    }
+          };
+        case 'number':
+          const numberEvaluatedValue =
+            parameters[chunk.parameterId] ?? documentVariableSpec.defaultValue;
+          chunk.evaluated = {
+            variableType: 'number',
+            variableName: documentVariableSpec.name,
+            variableValue: {
+              number: parseFloat(numberEvaluatedValue),
+            },
+          };
+          return {
+            type: 'text',
+            text: numberEvaluatedValue,
+          };
+        case 'integer':
+          const integerEvaluatedValue =
+            parameters[chunk.parameterId] ?? documentVariableSpec.defaultValue;
+          chunk.evaluated = {
+            variableType: 'integer',
+            variableName: documentVariableSpec.name,
+            variableValue: {
+              integer: parseInt(integerEvaluatedValue, 10),
+            },
+          };
+          return {
+            type: 'text',
+            text: integerEvaluatedValue,
+          };
+        case 'image':
+          const imageEvaluatedValue: {
+            url: string;
+            openAI_detail: 'low' | 'high' | 'auto';
+          } = {
+            url: parameters[chunk.parameterId] || '', // TODO: not sure i'm digging the return type of 'parameters'. also, the empty string should trigger a warning
+            openAI_detail: documentVariableSpec.openAI_detail, // yeah that's not gonna work
+          };
+          chunk.evaluated = {
+            variableType: 'image',
+            variableName: documentVariableSpec.name,
+            variableValue: imageEvaluatedValue,
+          };
+          return {
+            type: 'image_url',
+            image_url: imageEvaluatedValue,
+          };
+        default:
+          // throw new Error('Unknown parameter type ' + parameter.type);
+          // TODO log an error
+          break;
+      }
+      break;
+    // case 'inline-image':
+    //   throw new Error('Not implemented'); // TODO
+    default:
+      // throw new Error('Unknown chunk type ' + chunk.type);
+      // TODO log an error. we can't be throwing, it crashes the whole server... probably something we should fix anyway...
+      break;
   }
 
-  return newPlainText;
+  throw new Error('Unknown chunk ' + chunk);
+}
+
+export const evaluateVariablesInPlainText = (
+  plainText: ModelInput_PlainTextWithVariables_Value,
+  documentVariables: DocumentVariables,
+  parameters: RequestParameters,
+): EvaluatedModelInput_Value<ModelInput_PlainTextWithVariables_Value> => {
+  const contentChunks: EvaluatedContentChunk[] = [];
+
+  for (const chunk of plainText) {
+    contentChunks.push(
+      evaluateAndMutateChunk(parameters, documentVariables, chunk),
+    );
+  }
+
+  if (contentChunks.some((chunk) => chunk.type !== 'text')) {
+    throw new Error('Unexpected non-text chunk in plain text');
+  }
+
+  return contentChunks
+    .map((chunk) => (chunk as EvaluatedTextChunk).text)
+    .join('');
 };

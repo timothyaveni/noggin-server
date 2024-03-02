@@ -9,18 +9,20 @@ import {
   ModelInput_Value,
 } from './editorSchemaV1';
 
-export type EvaluatedContentChunk =
-  | {
-      type: 'text';
-      text: string;
-    }
-  | {
-      type: 'image_url';
-      image_url: {
-        url: string;
-        openAI_detail: 'low' | 'high' | 'auto';
-      };
-    };
+export type EvaluatedTextChunk = {
+  type: 'text';
+  text: string;
+};
+
+export type EvaluatedImageURLChunk = {
+  type: 'image_url';
+  image_url: {
+    url: string;
+    openAI_detail: 'low' | 'high' | 'auto';
+  };
+};
+
+export type EvaluatedContentChunk = EvaluatedTextChunk | EvaluatedImageURLChunk;
 
 type EvaluatedChatTurn = {
   speaker: 'user' | 'assistant';

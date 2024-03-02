@@ -27,6 +27,20 @@ export type VariableEvaluation =
         url: string;
         openAI_detail?: 'low' | 'high' | 'auto';
       };
+    }
+  | {
+      variableType: 'number';
+      variableName: string;
+      variableValue: {
+        number: number;
+      };
+    }
+  | {
+      variableType: 'integer';
+      variableName: string;
+      variableValue: {
+        integer: number;
+      };
     };
 
 type TextOrVariable =
@@ -128,6 +142,34 @@ export type ModelInput =
   | ModelInput_Boolean
   | ModelInput_Select
   | ModelInput_SimpleSchema;
+
+export type ModelInput_Value_for_ModelInput<T> =
+  T extends ModelInput_PlainTextWithVariables
+    ? ModelInput_PlainTextWithVariables_Value
+    : T extends ModelInput_ChatTextUserImagesWithVariables
+    ? ModelInput_StandardChatWithVariables_Value
+    : T extends ModelInput_ChatTextWithVariables
+    ? ModelInput_StandardChatWithVariables_Value
+    : T extends ModelInput_Number
+    ? ModelInput_Number_Value
+    : T extends ModelInput_Integer
+    ? ModelInput_Integer_Value
+    : T extends ModelInput_Boolean
+    ? ModelInput_Boolean_Value
+    : T extends ModelInput_Select
+    ? ModelInput_Select_Value
+    : T extends ModelInput_SimpleSchema
+    ? ModelInput_SimpleSchema_Value
+    : never;
+
+export type ModelInputs = Record<string, ModelInput>;
+
+export type All_ModelInput_Values_for_ModelInputs<T> = {
+  [K in keyof T]: ModelInput_Value_for_ModelInput<T[K]>;
+};
+
+export type ModelInputValues =
+  All_ModelInput_Values_for_ModelInputs<ModelInputs>;
 
 export type OutputFormat = {
   type: 'chat-text' | 'completion' | 'image' | 'structured-data';

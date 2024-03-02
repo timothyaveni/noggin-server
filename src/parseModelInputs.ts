@@ -3,6 +3,7 @@ import * as Y from 'yjs';
 import { EditorSchema } from './reagent-noggin-shared/types/editorSchema';
 import {
   ChatTurnWithVariables,
+  ModelInputValues,
   ModelInput_PlainTextWithVariables_Value,
   ModelInput_StandardChatWithVariables_Value,
 } from './reagent-noggin-shared/types/editorSchemaV1';
@@ -13,7 +14,7 @@ export const parseModelInputs = (
   modelInputsMap: Y.Map,
   editorSchema: EditorSchema,
 ) => {
-  const parsedInputs: any = {};
+  const parsedInputs: ModelInputValues = {};
 
   for (const inputKey of Object.keys(editorSchema.allEditorComponents)) {
     const input = editorSchema.allEditorComponents[inputKey];

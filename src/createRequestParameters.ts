@@ -9,29 +9,12 @@ import { createAssetInBucket } from './object-storage/createAssetInBucket.js';
 import { getExternalUrlForBucket } from './object-storage/minio.js';
 
 import gm from 'gm';
+import { createDocumentVariableForOverride } from './reagent-noggin-shared/createDocumentVariableForOverride.js';
+import { DocumentVariables } from './reagent-noggin-shared/types/DocType.js';
+import { EditorSchema } from './reagent-noggin-shared/types/editorSchema.js';
+import { ModelInputValues } from './reagent-noggin-shared/types/editorSchemaV1.js';
 
-// TODO: synced from store.tsx -- probably extract this to shared code
-type DocumentBaseVariable = {
-  name: string;
-};
-
-export interface DocumentTextVariable extends DocumentBaseVariable {
-  type: 'text';
-  maxLength: number;
-  defaultValue: string;
-}
-
-export interface DocumentImageVariable extends DocumentBaseVariable {
-  type: 'image';
-  openAI_detail: 'low' | 'high' | 'auto'; // openai-centric for now. also maybe in the future we do our own scaling in the shim?
-}
-
-export type DocumentVariable = DocumentTextVariable | DocumentImageVariable;
-type _DPTypeCheck = DocumentVariable['type'];
-
-type DocumentVariables = Record<string, DocumentVariable>;
-
-type RequestParametersWithMetadata = Record<
+export type RequestParametersWithMetadata = Record<
   string,
   | {
       type: 'text';
@@ -46,39 +29,66 @@ type RequestParametersWithMetadata = Record<
     }
 >;
 
-type RequestParameters = Record<string, string>;
+export type RequestParameters = Record<string, string>;
 
 const getRequestParametersFromRequest = (
   req: Request,
   documentVariables: DocumentVariables,
+  modelInputValues: ModelInputValues,
+  overridableSelections: string[],
+  editorSchema: EditorSchema,
 ) => {
   const parameters: RequestParametersWithMetadata = {};
 
-  for (const parameterKey of Object.keys(documentVariables)) {
-    const parameter = documentVariables[parameterKey]; // todo: dupe params etc
+  const documentVariablesWithOverrides: typeof documentVariables = JSON.parse(
+    JSON.stringify(documentVariables),
+  );
+
+  for (const overridable of overridableSelections) {
+    const modelInputValue = modelInputValues[overridable];
+    const documentVariable = createDocumentVariableForOverride(
+      overridable,
+      modelInputValue, // right okay we also do it here, not just in evaluateOverrides... don't love it
+      editorSchema,
+    );
+    if (modelInputValue) {
+      documentVariablesWithOverrides[documentVariable.id] =
+        documentVariable.variable;
+    } else {
+      // ???
+    }
+  }
+
+  for (const parameterKey of Object.keys(documentVariablesWithOverrides)) {
+    const parameter = documentVariablesWithOverrides[parameterKey]; // todo: dupe params etc
     const queryValue = req.query[parameter.name];
     const bodyValue =
       // @ts-expect-error
       req.nogginBody?.body && req.nogginBody?.body[parameter.name];
     switch (parameter.type) {
       case 'text':
+      case 'number': // these are represented in text at this point
+      case 'integer':
+        const maxLength =
+          (parameter.type === 'text' && parameter.maxLength) || Infinity;
+
         if (bodyValue) {
           parameters[parameterKey] = {
             type: 'text',
             text: bodyValue.toString(),
-            maxLength: parameter.maxLength,
+            maxLength: maxLength,
           };
         } else if (queryValue) {
           parameters[parameterKey] = {
             type: 'text',
             text: queryValue.toString(),
-            maxLength: parameter.maxLength,
+            maxLength: maxLength,
           };
         } else {
           parameters[parameterKey] = {
             type: 'text',
-            text: parameter.defaultValue || '',
-            maxLength: parameter.maxLength,
+            text: parameter.defaultValue.toString() || '', // TODO: hmm, we do this in multiple spots i think
+            maxLength: maxLength,
           };
         }
         break;
@@ -104,6 +114,9 @@ const getRequestParametersFromRequest = (
           };
         }
         break;
+      default:
+        const _exhaustiveCheck: never = parameter;
+        throw new Error('unknown parameter type');
     }
   }
 
@@ -284,9 +297,18 @@ export const createRequestParameters = async (
   runId: number,
   req: Request,
   documentParameters: DocumentVariables,
+  modelInputValues: ModelInputValues,
+  overridableSelections: string[],
+  editorSchema: EditorSchema,
 ): Promise<RequestParameters> => {
   const parameters: RequestParametersWithMetadata =
-    getRequestParametersFromRequest(req, documentParameters);
+    getRequestParametersFromRequest(
+      req,
+      documentParameters,
+      modelInputValues,
+      overridableSelections,
+      editorSchema,
+    );
 
   truncateMaxTextLength(parameters);
   // await
