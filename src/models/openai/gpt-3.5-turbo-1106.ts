@@ -140,6 +140,7 @@ export const streamResponse: StreamModelResponse = async (
       remainingBudget !== null &&
       preliminaryCost.toNumber('quastra') > remainingBudget
     ) {
+      // TODO: if preliminary cost is 0, let it run for all models
       failRun(
         runId,
         // TODO use a rounding function
