@@ -2,6 +2,7 @@ import { ModelExports } from '../index.js';
 import { streamResponse as streamResponse_andreasjansson_llama213bChatJsonSchema } from './andreasjansson_llama-2-13b-chat-json-schema.js';
 import { streamResponse as streamResponse_fofr_sdxlEmoji } from './fofr_sdxlEmoji.js';
 import { streamResponse as streamResponse_sdxl } from './sdxl.js';
+import { streamResponse as streamResponse_stableDiffusion } from './stable-diffusion.js';
 import { streamResponse as streamResponse_yorickvp_llava13b } from './yorickvp_llava-13b.js';
 
 export default function replicateIndex(modelName: string): ModelExports {
@@ -10,6 +11,10 @@ export default function replicateIndex(modelName: string): ModelExports {
       return {
         // todo -- we'll probably curry a lot of these replicate models for revisions
         streamResponse: streamResponse_sdxl,
+      };
+    case 'stable-diffusion':
+      return {
+        streamResponse: streamResponse_stableDiffusion,
       };
     case 'fofr_sdxl-emoji':
       return {
