@@ -99,29 +99,38 @@ export const streamResponse: StreamModelResponse = async (
     return;
   }
 
-  const output = (await replicate.run(
-    'yorickvp/llava-13b:a0fdc44e4f2e1f20f2bb4e27846899953ac8e66c5886c5878fa1d6b73ce009e5',
-    {
-      input: {
-        image: modelParams.evaluated.image,
-        prompt: modelParams.evaluated.prompt,
-        max_tokens: modelParams.evaluated['maximum-completion-length'],
-        temperature: modelParams.evaluated['temperature'],
-        top_p: modelParams.evaluated['top-p'],
+  let output: string[];
+  try {
+    output = (await replicate.run(
+      'yorickvp/llava-13b:a0fdc44e4f2e1f20f2bb4e27846899953ac8e66c5886c5878fa1d6b73ce009e5',
+      {
+        input: {
+          image: modelParams.evaluated.image,
+          prompt: modelParams.evaluated.prompt,
+          max_tokens: modelParams.evaluated['maximum-completion-length'],
+          temperature: modelParams.evaluated['temperature'],
+          top_p: modelParams.evaluated['top-p'],
+        },
       },
-    },
-    (prediction) => {
-      if (
-        prediction.status === 'succeeded' &&
-        prediction.metrics?.predict_time != null
-      ) {
-        saveFinalCostCalculation(
-          runId,
-          getReplicateCost('a40Large', prediction.metrics.predict_time),
-        );
-      }
-    },
-  )) as string[];
+      (prediction) => {
+        if (
+          prediction.status === 'succeeded' &&
+          prediction.metrics?.predict_time != null
+        ) {
+          saveFinalCostCalculation(
+            runId,
+            getReplicateCost('a40Large', prediction.metrics.predict_time),
+          );
+        }
+      },
+    )) as string[];
+  } catch (e: any) {
+    const message = e.message
+      ? 'Error from Replicate API: ' + e.message
+      : 'Error from Replicate API';
+    failRun(runId, message);
+    return;
+  }
 
   // TODO: stream response from this model
   const response = output.join('');
