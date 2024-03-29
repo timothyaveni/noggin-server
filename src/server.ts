@@ -23,7 +23,7 @@ app.use(
 
 app.get('*', async (req, res) => {
   try {
-    handleRequest(req, res);
+    await handleRequest(req, res);
   } catch (e) {
     console.error('Error handling request', e);
     res.status(500).send('Internal server error');
@@ -73,7 +73,7 @@ app.post(
   },
   async (req, res) => {
     try {
-      handleRequest(req, res);
+      await handleRequest(req, res);
     } catch (e) {
       console.error('Error handling request', e);
       res.status(500).send('Internal server error');
