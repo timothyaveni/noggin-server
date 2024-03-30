@@ -26,7 +26,9 @@ app.get('*', async (req, res) => {
     await handleRequest(req, res);
   } catch (e) {
     console.error('Error handling request', e);
-    res.status(500).send('Internal server error');
+    if (!res.headersSent) {
+      res.status(500).send('Internal server error');
+    }
   }
 });
 
@@ -76,7 +78,9 @@ app.post(
       await handleRequest(req, res);
     } catch (e) {
       console.error('Error handling request', e);
-      res.status(500).send('Internal server error');
+      if (!res.headersSent) {
+        res.status(500).send('Internal server error');
+      }
     }
   },
 );
