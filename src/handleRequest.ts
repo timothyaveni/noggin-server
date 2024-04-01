@@ -380,7 +380,7 @@ const handleRequest = async (req: Request, res: Response) => {
     },
   });
 
-  streamResponse(
+  await streamResponse(
     {
       unevaluated: parsedModelInputs,
       partialEvaluated: partialEvaluatedModelInputs,
