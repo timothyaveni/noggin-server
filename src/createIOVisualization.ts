@@ -77,6 +77,7 @@ const createHypertextFromTextWithVariables = (
   };
 };
 
+// TODO: add system prompt. this will vary between openai and anthropic
 export const createIOVisualizationForChatTextModel = (
   chatPrompt: ModelInput_StandardChatWithVariables_Value,
 ): IOVisualizationRender => {

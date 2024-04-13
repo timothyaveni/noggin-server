@@ -154,7 +154,7 @@ export const createOpenAIChatModel = (
         const message = e.message
           ? 'Error from OpenAI API: ' + e.message
           : 'Error from OpenAI API';
-        failRun(runId, `Error from the OpenAI API: ${message}`);
+        failRun(runId, message);
         return;
       }
 
@@ -222,7 +222,7 @@ export const createOpenAIChatModel = (
         const message = e.message
           ? 'Error from OpenAI API: ' + e.message
           : 'Error from OpenAI API';
-        failRun(runId, `Error from the OpenAI API: ${message}`);
+        failRun(runId, message);
         return;
       }
 

@@ -1,8 +1,14 @@
 import { NogginOutputAssetObject } from '@prisma/client';
+import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../prisma.js';
 import { ReagentBucket } from '../reagent-noggin-shared/object-storage-buckets';
-import { getBucket, getExternalUrlForBucket, minioClient } from './minio.js';
+import {
+  getBucket,
+  getExternalUrlForBucket,
+  minioClient,
+  verifyUrlIsExternalBucketAsset,
+} from './minio.js';
 
 // careful here. there's not a lot stopping malicious uploads, e.g. .html, i think.
 // we should not be treating objects.rea.gent as the same origin, but we should
@@ -47,4 +53,25 @@ export const createAssetInBucket = async (
   });
 
   return asset;
+};
+
+export const fetchBase64Asset = async (
+  bucket: ReagentBucket,
+  url: string,
+): Promise<{
+  base64: string;
+  mimeType: string;
+}> => {
+  if (!verifyUrlIsExternalBucketAsset(url, bucket)) {
+    throw new Error('Invalid asset URL');
+  }
+
+  const { data, headers } = await axios.get<Buffer>(url, {
+    responseType: 'arraybuffer',
+  });
+
+  return {
+    base64: data.toString('base64'),
+    mimeType: headers['content-type'],
+  };
 };

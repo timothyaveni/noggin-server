@@ -26,6 +26,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.20.4",
     "@prisma/client": "^5.7.1",
     "@slate-yjs/core": "^1.0.2",
     "axios": "^1.6.2",

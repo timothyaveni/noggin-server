@@ -22,3 +22,10 @@ export const getBucket = async (bucketName: ReagentBucket): Promise<string> => {
 export const getExternalUrlForBucket = (bucketName: ReagentBucket): string => {
   return `${process.env.OBJECT_STORAGE_EXTERNAL_URL}/${bucketName}`;
 };
+
+export const verifyUrlIsExternalBucketAsset = (
+  url: string,
+  bucketName: ReagentBucket,
+): boolean => {
+  return url.startsWith(`${getExternalUrlForBucket(bucketName)}/`);
+};
