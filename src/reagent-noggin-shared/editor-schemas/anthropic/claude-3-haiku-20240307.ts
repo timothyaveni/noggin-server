@@ -32,9 +32,9 @@ const schema: EditorSchema = {
         en_US: '',
       },
       type: 'number',
-      default: 1,
+      default: 0.2,
       min: 0,
-      max: 2,
+      max: 1,
     },
     'top-p': {
       name: {

@@ -56,3 +56,36 @@ export const createAnthropicMultimodalContent = async (
 
   return anthropicContentChunks;
 };
+
+const estimateStringIntokenCount = (str: string) => {
+  // say 1 word per token (it's good to overestimate on budget) and 5 chars per word
+  return str.length / 5;
+};
+
+export const estimateAnthropicIntokenCount = (
+  system: string,
+  chat: { content: AnthropicContent }[],
+) => {
+  return (
+    estimateStringIntokenCount(system) +
+    chat.reduce((acc, chunk) => {
+      if (typeof chunk.content === 'string') {
+        return acc + estimateStringIntokenCount(chunk.content);
+      } else {
+        return (
+          acc +
+          chunk.content.reduce((acc, messageChunk) => {
+            if (messageChunk.type === 'text') {
+              return acc + estimateStringIntokenCount(messageChunk.text);
+            } else if (messageChunk.type === 'image') {
+              return acc + 1600; // images can get big -- they're resized if they go over 1600 tokens
+            } else {
+              // ???
+              return acc;
+            }
+          }, 0)
+        );
+      }
+    }, 0)
+  );
+};

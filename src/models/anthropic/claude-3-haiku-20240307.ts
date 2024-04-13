@@ -26,7 +26,10 @@ import {
   saveFinalCostCalculation,
   savePreliminaryCostEstimate,
 } from '../../cost-calculation/save-cost-calculations.js';
-import { createAnthropicMultimodalContent } from './createAnthropicMultimodalContent.js';
+import {
+  createAnthropicMultimodalContent,
+  estimateAnthropicIntokenCount,
+} from './createAnthropicMultimodalContent.js';
 
 type UnevaluatedModelParams = {
   'system-prompt': ModelInput_PlainTextWithVariables_Value;
@@ -118,7 +121,13 @@ export const streamResponse: StreamModelResponse = async (
     return;
   }
 
-  const inputTokenCountEstimate = unit(0, 'intokens'); // TODO
+  const inputTokenCountEstimate = unit(
+    estimateAnthropicIntokenCount(
+      modelParams.evaluated['system-prompt'],
+      messages,
+    ),
+    'intokens',
+  );
   const outputTokenLengthEstimate = unit(
     modelParams.evaluated['maximum-completion-length'] || 4096,
     'outtokens',
