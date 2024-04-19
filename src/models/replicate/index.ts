@@ -1,5 +1,6 @@
 import { ModelExports } from '../index.js';
 import { streamResponse as streamResponse_andreasjansson_llama213bChatJsonSchema } from './andreasjansson_llama-2-13b-chat-json-schema.js';
+import { streamResponse as streamResponse_bytedance_sdxlLightning4Step } from './bytedance_sdxl-lightning-4step.js';
 import { streamResponse as streamResponse_fofr_sdxlEmoji } from './fofr_sdxlEmoji.js';
 import { streamResponse as streamResponse_sdxl } from './sdxl.js';
 import { streamResponse as streamResponse_stableDiffusion } from './stable-diffusion.js';
@@ -19,6 +20,10 @@ export default function replicateIndex(modelName: string): ModelExports {
     case 'fofr_sdxl-emoji':
       return {
         streamResponse: streamResponse_fofr_sdxlEmoji,
+      };
+    case 'bytedance_sdxl-lightning-4step':
+      return {
+        streamResponse: streamResponse_bytedance_sdxlLightning4Step,
       };
     case 'andreasjansson_llama-2-13b-chat-json-schema':
       return {
