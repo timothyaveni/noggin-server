@@ -54,7 +54,38 @@ export const createAnthropicMultimodalContent = async (
     }
   }
 
-  return anthropicContentChunks;
+  return mergeTextChunks(anthropicContentChunks);
+};
+
+const mergeTextChunks = (content: AnthropicContent): AnthropicContent => {
+  if (typeof content === 'string') {
+    return content;
+  }
+
+  const mergedContent: AnthropicContent = [];
+  let currentTextChunk = '';
+
+  for (const chunk of content) {
+    if (chunk.type === 'text') {
+      currentTextChunk += chunk.text;
+    } else {
+      if (currentTextChunk) {
+        mergedContent.push({ type: 'text', text: currentTextChunk });
+        currentTextChunk = '';
+      }
+      mergedContent.push(chunk);
+    }
+  }
+
+  if (currentTextChunk) {
+    mergedContent.push({ type: 'text', text: currentTextChunk });
+  }
+
+  // i don't love that this would get rid of, say, newlines between images, but i think anthropic requires it.
+  // newlines between different bits of text are still fine because the text will be
+  return mergedContent.filter(
+    (chunk) => chunk.type !== 'text' || chunk.text.trim().length > 0,
+  );
 };
 
 const estimateStringIntokenCount = (str: string) => {
