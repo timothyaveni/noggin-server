@@ -150,6 +150,9 @@ export const createOpenAIChatModel = (
         stream = await openai.chat.completions.create({
           ...apiParams,
           stream: true,
+          stream_options: {
+            include_usage: true,
+          },
         });
       } catch (e: any) {
         const message = e.message
@@ -198,6 +201,8 @@ export const createOpenAIChatModel = (
       }
 
       let output = '';
+      let inTokensUsed = 0;
+      let outTokensUsed = 0;
 
       // TODO: some of these models are kinda crazy fast -- we definitely want to throttle/batch log calls, even if we write to the response stream more frequently
       try {
@@ -211,6 +216,11 @@ export const createOpenAIChatModel = (
               chunk,
             },
           });
+
+          if (chunk.usage) {
+            inTokensUsed = chunk.usage.prompt_tokens || 0;
+            outTokensUsed = chunk.usage.completion_tokens || 0;
+          }
 
           const partial = chunk.choices[0]?.delta?.content;
 
@@ -237,17 +247,27 @@ export const createOpenAIChatModel = (
         },
       });
 
-      const outputTokenCount = await countTextOutTokens(output);
+      let finalCost;
+      if (inTokensUsed === 0 && outTokensUsed === 0) {
+        // just in case usage doesn't show up for some reason
+        const outputTokenCount = await countTextOutTokens(output);
+        finalCost = getChatCompletionCost(inputTokenCount, outputTokenCount);
 
-      const finalCost = getChatCompletionCost(
-        inputTokenCount,
-        outputTokenCount,
-      );
+        await saveFinalCostCalculation(runId, finalCost, {
+          inputTokenCount,
+          outputTokenCount,
+        });
+      } else {
+        finalCost = getChatCompletionCost(
+          unit(inTokensUsed, 'intokens'),
+          unit(outTokensUsed, 'outtokens'),
+        );
 
-      saveFinalCostCalculation(runId, finalCost, {
-        inputTokenCount,
-        outputTokenCount,
-      });
+        await saveFinalCostCalculation(runId, finalCost, {
+          inputTokenCount: inTokensUsed,
+          outputTokenCount: outTokensUsed,
+        });
+      }
 
       succeedRun(runId, 'text', output);
     } else if (chosenOutputFormat.type === 'structured-data') {
