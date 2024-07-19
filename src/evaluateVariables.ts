@@ -49,7 +49,7 @@ export const evaluateVariablesInModelInputs = (
           inputKey
         ] as ModelInput_StandardChatWithVariables_Value;
         evaluatedModelInputValues[inputKey] = evaluateVariablesInChatText(
-          thisModelInputValue,
+          /* inout */ thisModelInputValue,
           documentVariables,
           parameters,
         );
@@ -59,7 +59,7 @@ export const evaluateVariablesInModelInputs = (
           inputKey
         ] as ModelInput_PlainTextWithVariables_Value;
         evaluatedModelInputValues[inputKey] = evaluateVariablesInPlainText(
-          thisModelInputValue,
+          /* inout */ thisModelInputValue,
           documentVariables,
           parameters,
         );
