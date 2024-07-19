@@ -280,12 +280,23 @@ const handleRequest = async (req: Request, res: Response) => {
   let {
     partialEvaluated: partialEvaluatedModelInputs,
     evaluated: evaluatedModelParams,
+    allEvaluations,
   } = evaluateVariablesInModelInputs(
     parsedModelInputs,
     editorSchema,
     documentVariables,
     requestParameters,
   );
+
+  // console.log({ allEvaluations });
+  await prisma.nogginRun.update({
+    where: {
+      id: run.id,
+    },
+    data: {
+      evaluatedParameters: allEvaluations,
+    },
+  });
 
   // TODO this could also go in the function above. hard to say
   // TODO: should we bring the partial in here too? not clear
@@ -297,7 +308,7 @@ const handleRequest = async (req: Request, res: Response) => {
   );
 
   // todo maybe a timeout on this side before we call into the model code?
-  console.log(evaluatedModelParams);
+  // console.log(evaluatedModelParams);
 
   registerStream(run.id, {
     appendText:

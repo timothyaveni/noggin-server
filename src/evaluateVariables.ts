@@ -16,6 +16,7 @@ import {
   ModelInput_StandardChatWithVariables_Value,
   ModelInput_Value,
   TextOrVariable,
+  VariableEvaluation,
 } from './reagent-noggin-shared/types/editorSchemaV1';
 import {
   EvaluatedContentChunk,
@@ -38,6 +39,7 @@ export const evaluateVariablesInModelInputs = (
   const evaluatedModelInputValues: EvaluatedModelInputs<
     typeof modelInputValues
   > = {};
+  const allEvaluations: Record<string, VariableEvaluation> = {};
 
   for (const inputKey of Object.keys(editorSchema.allEditorComponents)) {
     const input = editorSchema.allEditorComponents[inputKey];
@@ -52,6 +54,7 @@ export const evaluateVariablesInModelInputs = (
           /* inout */ thisModelInputValue,
           documentVariables,
           parameters,
+          /* inout */ allEvaluations,
         );
         break;
       case 'plain-text-with-parameters':
@@ -62,42 +65,43 @@ export const evaluateVariablesInModelInputs = (
           /* inout */ thisModelInputValue,
           documentVariables,
           parameters,
+          /* inout */ allEvaluations,
         );
         break;
       case 'image':
         thisModelInputValue = partialEvaluatedModelInputValues[
           inputKey
         ] as ModelInput_Image_Value;
-        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no params just yet
+        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no vars just yet
       case 'integer':
         thisModelInputValue = partialEvaluatedModelInputValues[
           inputKey
         ] as ModelInput_Integer_Value;
-        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no params just yet
+        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no vars just yet
         break;
       case 'number':
         thisModelInputValue = partialEvaluatedModelInputValues[
           inputKey
         ] as ModelInput_Number_Value;
-        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no params just yet
+        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no vars just yet
         break;
       case 'boolean':
         thisModelInputValue = partialEvaluatedModelInputValues[
           inputKey
         ] as ModelInput_Boolean_Value;
-        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no params just yet
+        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no vars just yet
         break;
       case 'select':
         thisModelInputValue = partialEvaluatedModelInputValues[
           inputKey
         ] as ModelInput_Select_Value;
-        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no params just yet
+        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no vars just yet
         break;
       case 'simple-schema':
         thisModelInputValue = partialEvaluatedModelInputValues[
           inputKey
         ] as ModelInput_SimpleSchema_Value;
-        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no params just yet
+        evaluatedModelInputValues[inputKey] = thisModelInputValue; // no vars just yet
         break;
       default:
         const _exhaustiveCheck: never = input;
@@ -107,6 +111,7 @@ export const evaluateVariablesInModelInputs = (
   return {
     partialEvaluated: partialEvaluatedModelInputValues,
     evaluated: evaluatedModelInputValues,
+    allEvaluations,
   };
 };
 
@@ -114,6 +119,7 @@ export const evaluateVariablesInChatText = (
   chatText: ModelInput_StandardChatWithVariables_Value,
   documentVariables: DocumentVariables,
   parameters: RequestParameters,
+  allEvaluations: Record<string, VariableEvaluation>,
 ): EvaluatedModelInput_Value<ModelInput_StandardChatWithVariables_Value> => {
   const newChatText: EvaluatedStandardChat = [];
 
@@ -127,7 +133,12 @@ export const evaluateVariablesInChatText = (
 
     for (const chunk of turn.text) {
       contentChunks.push(
-        evaluateAndMutateChunk(parameters, documentVariables, chunk),
+        evaluateAndMutateChunk(
+          parameters,
+          documentVariables,
+          chunk,
+          allEvaluations,
+        ),
       );
     }
 
@@ -142,6 +153,7 @@ function evaluateAndMutateChunk(
   parameters: RequestParameters,
   documentVariables: DocumentVariables,
   chunk: TextOrVariable,
+  allEvaluations: Record<string, VariableEvaluation>,
 ): EvaluatedContentChunk {
   switch (chunk.type) {
     case 'text':
@@ -161,6 +173,7 @@ function evaluateAndMutateChunk(
               text: textEvaluatedValue,
             },
           };
+          allEvaluations[documentVariableSpec.name] = chunk.evaluated;
           return {
             type: 'text',
             text: textEvaluatedValue,
@@ -175,6 +188,7 @@ function evaluateAndMutateChunk(
               number: parseFloat(numberEvaluatedValue),
             },
           };
+          allEvaluations[documentVariableSpec.name] = chunk.evaluated;
           return {
             type: 'text',
             text: numberEvaluatedValue,
@@ -189,6 +203,7 @@ function evaluateAndMutateChunk(
               integer: parseInt(integerEvaluatedValue, 10),
             },
           };
+          allEvaluations[documentVariableSpec.name] = chunk.evaluated;
           return {
             type: 'text',
             text: integerEvaluatedValue,
@@ -206,6 +221,7 @@ function evaluateAndMutateChunk(
             variableName: documentVariableSpec.name,
             variableValue: imageEvaluatedValue,
           };
+          allEvaluations[documentVariableSpec.name] = chunk.evaluated;
           return {
             type: 'image_url',
             image_url: imageEvaluatedValue,
@@ -231,12 +247,18 @@ export const evaluateVariablesInPlainText = (
   plainText: ModelInput_PlainTextWithVariables_Value,
   documentVariables: DocumentVariables,
   parameters: RequestParameters,
+  allEvaluations: Record<string, VariableEvaluation>,
 ): EvaluatedModelInput_Value<ModelInput_PlainTextWithVariables_Value> => {
   const contentChunks: EvaluatedContentChunk[] = [];
 
   for (const chunk of plainText) {
     contentChunks.push(
-      evaluateAndMutateChunk(parameters, documentVariables, chunk),
+      evaluateAndMutateChunk(
+        parameters,
+        documentVariables,
+        chunk,
+        allEvaluations,
+      ),
     );
   }
 
