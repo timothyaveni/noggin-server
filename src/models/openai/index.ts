@@ -5,6 +5,7 @@ import { streamResponse as streamResponse_gpt41106Preview } from './gpt-4-1106-p
 import { streamResponse as streamResponse_gpt4Turbo20240409 } from './gpt-4-turbo-2024-04-09.js';
 import { streamResponse as streamResponse_gpt4VisionPreview } from './gpt-4-vision-preview.js';
 import { streamResponse as streamResponse_gpt4o20240513 } from './gpt-4o-2024-05-13.js';
+import { streamResponse as streamResponse_gpt4oMini20240718 } from './gpt-4o-mini-2024-07-18.js';
 
 export default function openaiIndex(modelName: string): ModelExports {
   switch (modelName) {
@@ -31,6 +32,10 @@ export default function openaiIndex(modelName: string): ModelExports {
     case 'gpt-4o-2024-05-13':
       return {
         streamResponse: streamResponse_gpt4o20240513,
+      };
+    case 'gpt-4o-mini-2024-07-18':
+      return {
+        streamResponse: streamResponse_gpt4oMini20240718,
       };
     default:
       throw new Error(`Unknown model ${modelName}`);
