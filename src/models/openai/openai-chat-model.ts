@@ -133,7 +133,8 @@ export const createOpenAIChatModel = (
       top_p: modelParams.evaluated['top-p'],
     };
 
-    console.log(JSON.stringify(apiParams, null, 2));
+    // this is kind of nice in dev but silly in prod. need better log view maybe
+    // console.log(JSON.stringify(apiParams, null, 2));
 
     writeLogToRunStream(runId, {
       level: 'debug',
