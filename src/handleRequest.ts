@@ -111,7 +111,7 @@ const handleRequest = async (req: Request, res: Response) => {
   res.setHeader('X-Reagent-Noggin-Run-Id', run.uuid);
 
   writeLogToRunStream(run.id, {
-    level: 'info',
+    level: 'debug',
     stage: 'request',
     message: {
       type: 'request_processed',
