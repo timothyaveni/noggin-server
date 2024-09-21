@@ -2,10 +2,12 @@ import { NogginOutputAssetObject } from '@prisma/client';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../prisma.js';
-import { ReagentBucket } from '../reagent-noggin-shared/object-storage-buckets';
+import {
+  ReagentBucketExternalUrl,
+  ReagentBucketId,
+} from '../reagent-noggin-shared/object-storage-buckets.js';
 import {
   getBucket,
-  getExternalUrlForBucket,
   minioClient,
   verifyUrlIsExternalBucketAsset,
 } from './minio.js';
@@ -21,7 +23,7 @@ const MIME_TYPE_WHITELIST: Record<string, string> = {
 
 export const createAssetInBucket = async (
   runId: number,
-  bucket: ReagentBucket,
+  bucket: ReagentBucketId,
   file: Buffer,
   mimeType: string,
 ): Promise<NogginOutputAssetObject> => {
@@ -48,7 +50,7 @@ export const createAssetInBucket = async (
       filename: outputAssetFilename,
       nogginRunId: runId,
       mimeType: mimeType,
-      url: `${getExternalUrlForBucket(bucket)}/${outputAssetFilename}`,
+      url: `${ReagentBucketExternalUrl[bucket]}/${outputAssetFilename}`,
     },
   });
 
@@ -56,7 +58,7 @@ export const createAssetInBucket = async (
 };
 
 export const fetchBase64Asset = async (
-  bucket: ReagentBucket,
+  bucket: ReagentBucketId,
   url: string,
 ): Promise<{
   base64: string;

@@ -1,6 +1,5 @@
 import axios from 'axios';
 import Replicate from 'replicate';
-import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
 import {
   failRun,
   openRunStream,
@@ -129,7 +128,7 @@ export const streamResponse: StreamModelResponse = async (
 
   const { url } = await createAssetInBucket(
     runId,
-    ReagentBucket.NOGGIN_RUN_OUTPUTS,
+    'NOGGIN_RUN_OUTPUTS',
     buffer,
     'image/png',
   );

@@ -16,7 +16,6 @@ import {
 import { createIOVisualizationForImageOutputModel } from '../../createIOVisualization.js';
 import { createAssetInBucket } from '../../object-storage/createAssetInBucket.js';
 import { unit } from '../../reagent-noggin-shared/cost-calculation/units.js';
-import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
 import {
   ModelInput_Integer_Value,
   ModelInput_PlainTextWithVariables_Value,
@@ -131,7 +130,7 @@ export const streamResponse: StreamModelResponse = async (
 
   const { url } = await createAssetInBucket(
     runId,
-    ReagentBucket.NOGGIN_RUN_OUTPUTS,
+    'NOGGIN_RUN_OUTPUTS',
     buffer,
     'image/png',
   );

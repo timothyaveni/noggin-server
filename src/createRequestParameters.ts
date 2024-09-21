@@ -1,15 +1,14 @@
 import { Request } from 'express';
 import { emptyPNGUrl } from './imageUtils.js';
-import { ReagentBucket } from './reagent-noggin-shared/object-storage-buckets.js';
 
 import axios from 'axios';
 import { parse } from 'path';
 import { validate as validateUuid } from 'uuid';
 import { createAssetInBucket } from './object-storage/createAssetInBucket.js';
-import { getExternalUrlForBucket } from './object-storage/minio.js';
 
 import gm from 'gm';
 import { createDocumentVariableForOverride } from './reagent-noggin-shared/createDocumentVariableForOverride.js';
+import { ReagentBucketExternalUrl } from './reagent-noggin-shared/object-storage-buckets.js';
 import { DocumentVariables } from './reagent-noggin-shared/types/DocType.js';
 import { EditorSchema } from './reagent-noggin-shared/types/editorSchema.js';
 import { ModelInputValues } from './reagent-noggin-shared/types/editorSchemaV1.js';
@@ -140,9 +139,7 @@ const truncateMaxTextLength = (parameters: RequestParametersWithMetadata) => {
 };
 
 const getAlreadyObjectStorageUrl = (text: string): string | null => {
-  const objectStoragePrefix = `${getExternalUrlForBucket(
-    ReagentBucket.NOGGIN_RUN_INPUTS,
-  )}/`;
+  const objectStoragePrefix = `${ReagentBucketExternalUrl['NOGGIN_RUN_INPUTS']}/`;
   if (text.startsWith(objectStoragePrefix)) {
     const remainder = text.slice(objectStoragePrefix.length);
     // remainder is a filename
@@ -169,7 +166,7 @@ const streamToInputBucket = async (
 
   const { url: objectUrl } = await createAssetInBucket(
     runId,
-    ReagentBucket.NOGGIN_RUN_INPUTS,
+    'NOGGIN_RUN_INPUTS',
     Buffer.from(response.data, 'binary'),
     response.headers['content-type'],
   );
@@ -218,7 +215,7 @@ const tryUploadingBase64 = async (
 
     const { url } = await createAssetInBucket(
       runId,
-      ReagentBucket.NOGGIN_RUN_INPUTS,
+      'NOGGIN_RUN_INPUTS',
       buf,
       mime,
     );

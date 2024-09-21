@@ -3,7 +3,6 @@ import {
   TextBlockParam,
 } from '@anthropic-ai/sdk/resources/messages.js';
 import { fetchBase64Asset } from '../../object-storage/createAssetInBucket.js';
-import { ReagentBucket } from '../../reagent-noggin-shared/object-storage-buckets.js';
 import { EvaluatedContentChunk } from '../../reagent-noggin-shared/types/evaluated-variables';
 
 // export type OpenAIContentChunk =
@@ -37,7 +36,7 @@ export const createAnthropicMultimodalContent = async (
       case 'image_url':
         // TODO deserialize this loop
         const { base64, mimeType } = await fetchBase64Asset(
-          ReagentBucket.NOGGIN_RUN_INPUTS,
+          'NOGGIN_RUN_INPUTS',
           chunk.image_url.url,
         );
         anthropicContentChunks.push({
