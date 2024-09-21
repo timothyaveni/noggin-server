@@ -31,6 +31,9 @@ export const getTotalOrganizationSpendForUser_OMNISCIENT = async (
     userId: number;
   },
 ): Promise<number> => {
+  // TODO i think we should put the 'and userId = ' in the subquery
+  // maybe keep it outside, too, idk, but right now this page is slow
+  // and presumably it's because we fetch all the nogs in the org, then join and then filter
   const [{ totalCost }] = (await prisma.$queryRaw`
     select
       sum(coalesce("NogginRunCost"."computedCostQuastra", "NogginRunCost"."estimatedCostQuastra", 0)) as "totalCost"
