@@ -25,11 +25,17 @@ export interface DocumentIntegerVariable extends DocumentBaseVariable {
   defaultValue: number;
 }
 
+export interface DocumentBooleanVariable extends DocumentBaseVariable {
+  type: 'boolean';
+  defaultValue: boolean;
+}
+
 export type DocumentVariable =
   | DocumentTextVariable
   | DocumentImageVariable
   | DocumentNumberVariable
-  | DocumentIntegerVariable;
+  | DocumentIntegerVariable
+  | DocumentBooleanVariable;
 type _DPTypeCheck = DocumentVariable['type'];
 
 export type DocumentVariables = Record<string, DocumentVariable>;

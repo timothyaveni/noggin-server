@@ -1,3 +1,4 @@
+import { coerceBoolean } from './coerceBoolean.js';
 import { RequestParameters } from './createRequestParameters';
 import {
   DocumentVariable,
@@ -181,32 +182,51 @@ function evaluateAndMutateChunk(
         case 'number':
           const numberEvaluatedValue =
             parameters[chunk.parameterId] ?? documentVariableSpec.defaultValue;
+          const numberCoercedValue = parseFloat(numberEvaluatedValue);
           chunk.evaluated = {
             variableType: 'number',
             variableName: documentVariableSpec.name,
             variableValue: {
-              number: parseFloat(numberEvaluatedValue),
+              number: numberCoercedValue,
             },
           };
           allEvaluations[documentVariableSpec.name] = chunk.evaluated;
           return {
             type: 'text',
-            text: numberEvaluatedValue,
+            text: numberCoercedValue.toString(),
           };
         case 'integer':
           const integerEvaluatedValue =
             parameters[chunk.parameterId] ?? documentVariableSpec.defaultValue;
+          const integerCoercedValue = parseInt(integerEvaluatedValue, 10);
           chunk.evaluated = {
             variableType: 'integer',
             variableName: documentVariableSpec.name,
             variableValue: {
-              integer: parseInt(integerEvaluatedValue, 10),
+              integer: integerCoercedValue,
             },
           };
           allEvaluations[documentVariableSpec.name] = chunk.evaluated;
           return {
             type: 'text',
-            text: integerEvaluatedValue,
+            text: integerCoercedValue.toString(),
+          };
+        case 'boolean':
+          const booleanEvaluatedValue =
+            parameters[chunk.parameterId] ?? documentVariableSpec.defaultValue;
+          const booleanCoercedValue =
+            coerceBoolean(booleanEvaluatedValue) ?? false; // shouldn't be undefined because of the default value above
+          chunk.evaluated = {
+            variableType: 'boolean',
+            variableName: documentVariableSpec.name,
+            variableValue: {
+              boolean: booleanCoercedValue,
+            },
+          };
+          allEvaluations[documentVariableSpec.name] = chunk.evaluated;
+          return {
+            type: 'text',
+            text: booleanCoercedValue.toString(),
           };
         case 'image':
           const imageEvaluatedValue: {
@@ -227,7 +247,9 @@ function evaluateAndMutateChunk(
             image_url: imageEvaluatedValue,
           };
         default:
-          // throw new Error('Unknown parameter type ' + parameter.type);
+          // throw new Error(
+          //   'Unknown parameter type ' + documentVariableSpec.type,
+          // );
           // TODO log an error
           break;
       }

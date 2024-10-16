@@ -41,6 +41,13 @@ export type VariableEvaluation =
       variableValue: {
         integer: number;
       };
+    }
+  | {
+      variableType: 'boolean';
+      variableName: string;
+      variableValue: {
+        boolean: boolean;
+      };
     };
 
 type TextOrVariable =

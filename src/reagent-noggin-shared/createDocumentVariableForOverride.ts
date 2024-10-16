@@ -10,14 +10,14 @@ export const overridableModelInputTypes = {
   integer: true,
   number: true,
   image: true,
+  boolean: true,
 
   // for now:
-  boolean: false,
   select: false,
 };
 
 export const overridableModelInputTypeMap: {
-  [key: string]: 'integer' | 'number' | 'image' | null;
+  [key: string]: 'integer' | 'number' | 'image' | 'boolean' | null;
 } = {
   'chat-text-user-images-with-parameters': null,
   'chat-text-with-parameters': null,
@@ -27,8 +27,8 @@ export const overridableModelInputTypeMap: {
   integer: 'integer',
   number: 'number',
   image: 'image',
+  boolean: 'boolean',
 
-  boolean: null,
   select: null,
 };
 
@@ -60,6 +60,15 @@ export const createDocumentVariableForOverride = (
         variable: {
           name: overrideKey,
           type: 'number',
+          defaultValue,
+        },
+      };
+    case 'boolean':
+      return {
+        id: overrideKey,
+        variable: {
+          name: overrideKey,
+          type: 'boolean',
           defaultValue,
         },
       };
