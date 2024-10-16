@@ -70,6 +70,7 @@ const getRequestParametersFromRequest = (
       case 'text':
       case 'number': // these are represented in text at this point
       case 'integer':
+      case 'boolean':
         const maxLength =
           (parameter.type === 'text' && parameter.maxLength) || Infinity;
 

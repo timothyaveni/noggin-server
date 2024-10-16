@@ -53,6 +53,16 @@ const createHypertextFromTextWithVariables = (
             },
             variableEvaluationNotes: [],
           };
+        } else if (text.evaluated!.variableType === 'boolean') {
+          return {
+            type: 'variable',
+            variableName: text.evaluated!.variableName,
+            variableEvaluatedValue: {
+              type: 'text',
+              text: text.evaluated!.variableValue.boolean.toString(),
+            },
+            variableEvaluationNotes: [],
+          };
         } else if (text.evaluated!.variableType === 'image') {
           return {
             type: 'variable',

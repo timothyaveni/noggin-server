@@ -1,5 +1,7 @@
 import { ModelExports } from '../index.js';
 import { streamResponse as streamResponse_andreasjansson_llama213bChatJsonSchema } from './andreasjansson_llama-2-13b-chat-json-schema.js';
+import { streamResponse as streamResponse_blackForestLabs_Flux11Pro } from './black-forest-labs_flux-1-1-pro.js';
+import { streamResponse as streamResponse_blackForestLabs_Flux1Schnell } from './black-forest-labs_flux-1-schnell.js';
 import { streamResponse as streamResponse_bytedance_sdxlLightning4Step } from './bytedance_sdxl-lightning-4step.js';
 import { streamResponse as streamResponse_fofr_sdxlEmoji } from './fofr_sdxlEmoji.js';
 import { streamResponse as streamResponse_metaLlama370bInstruct } from './meta-llama-3-70b-instruct.js';
@@ -37,6 +39,14 @@ export default function replicateIndex(modelName: string): ModelExports {
     case 'meta-llama-3-70b-instruct':
       return {
         streamResponse: streamResponse_metaLlama370bInstruct,
+      };
+    case 'black-forest-labs_flux-1.1-pro':
+      return {
+        streamResponse: streamResponse_blackForestLabs_Flux11Pro,
+      };
+    case 'black-forest-labs_flux-1-schnell':
+      return {
+        streamResponse: streamResponse_blackForestLabs_Flux1Schnell,
       };
     default:
       throw new Error(`Unknown model ${modelName}`);
