@@ -4,6 +4,8 @@ import { streamResponse as streamResponse_blackForestLabs_Flux11Pro } from './bl
 import { streamResponse as streamResponse_blackForestLabs_Flux1Schnell } from './black-forest-labs_flux-1-schnell.js';
 import { streamResponse as streamResponse_bytedance_sdxlLightning4Step } from './bytedance_sdxl-lightning-4step.js';
 import { streamResponse as streamResponse_fofr_sdxlEmoji } from './fofr_sdxlEmoji.js';
+import { streamResponse as streamResponse_metaLlama31405bInstruct } from './meta-llama-3-1-405b-instruct.js';
+import { streamResponse as streamResponse_metaLlama370bBase } from './meta-llama-3-70b-base.js';
 import { streamResponse as streamResponse_metaLlama370bInstruct } from './meta-llama-3-70b-instruct.js';
 import { streamResponse as streamResponse_sdxl } from './sdxl.js';
 import { streamResponse as streamResponse_stableDiffusion } from './stable-diffusion.js';
@@ -39,6 +41,14 @@ export default function replicateIndex(modelName: string): ModelExports {
     case 'meta-llama-3-70b-instruct':
       return {
         streamResponse: streamResponse_metaLlama370bInstruct,
+      };
+    case 'meta-llama-3-70b-base':
+      return {
+        streamResponse: streamResponse_metaLlama370bBase,
+      };
+    case 'meta-llama-3-1-405b-instruct':
+      return {
+        streamResponse: streamResponse_metaLlama31405bInstruct,
       };
     case 'black-forest-labs_flux-1.1-pro':
       return {
