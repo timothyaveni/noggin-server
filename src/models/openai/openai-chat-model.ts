@@ -1,13 +1,15 @@
 import { Unit } from 'mathjs';
 import OpenAI from 'openai';
 import {
+  ChatCompletionContentPartImage,
   ChatCompletionCreateParams,
   ChatCompletionMessageParam,
   FunctionParameters,
 } from 'openai/resources/index.js';
 import {
-  countChatInputTokens,
+  countChatInputTokens as countChatInputTokensForModel,
   countTextOutTokens,
+  panicIfAskedToCalculateImageTokens,
 } from '../../cost-calculation/openai/count-openai-tokens.js';
 import { getOpenAiChatCompletionCost } from '../../cost-calculation/openai/openai-cost.js';
 import {
@@ -66,6 +68,8 @@ type OpenAIChatModelDescription = {
     supportsImageInputs: boolean;
   };
 
+  imageTokenCalculator?: (chunk: ChatCompletionContentPartImage) => Unit;
+
   pricePerIntoken: Unit;
   pricePerOuttoken: Unit;
 };
@@ -79,6 +83,11 @@ export const createOpenAIChatModel = (
     modelDescription.pricePerIntoken,
     modelDescription.pricePerOuttoken,
   );
+
+  const calculateImageTokens =
+    modelDescription.imageTokenCalculator ?? panicIfAskedToCalculateImageTokens;
+  const countChatInputTokens =
+    countChatInputTokensForModel(calculateImageTokens);
 
   const streamResponse: StreamModelResponse = async (
     modelParams: ModelParamsForStreamResponse<UnevaluatedModelParams>,
