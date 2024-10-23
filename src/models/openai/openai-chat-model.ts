@@ -57,7 +57,8 @@ type OpenAIModelName =
   | 'gpt-4-vision-preview'
   | 'gpt-4-turbo-2024-04-09'
   | 'gpt-4o-2024-05-13'
-  | 'gpt-4o-mini-2024-07-18';
+  | 'gpt-4o-mini-2024-07-18'
+  | 'gpt-4o-2024-08-06';
 
 type OpenAIChatModelDescription = {
   modelName: OpenAIModelName;
@@ -71,6 +72,7 @@ type OpenAIChatModelDescription = {
   imageTokenCalculator?: (chunk: ChatCompletionContentPartImage) => Unit;
 
   pricePerIntoken: Unit;
+  pricePerCachedIntoken?: Unit;
   pricePerOuttoken: Unit;
 };
 
@@ -81,6 +83,7 @@ export const createOpenAIChatModel = (
 ) => {
   const getChatCompletionCost = getOpenAiChatCompletionCost(
     modelDescription.pricePerIntoken,
+    modelDescription.pricePerCachedIntoken,
     modelDescription.pricePerOuttoken,
   );
 
@@ -185,6 +188,7 @@ export const createOpenAIChatModel = (
       // TODO probably inline this
       const preliminaryCost = getChatCompletionCost(
         inputTokenCount,
+        unit(0, 'intokens'), // assume all tokens are uncached
         outputTokenLengthEstimate,
       );
 
@@ -213,6 +217,7 @@ export const createOpenAIChatModel = (
 
       let output = '';
       let inTokensUsed = 0;
+      let cachedInTokensUsed = 0;
       let outTokensUsed = 0;
 
       // TODO: some of these models are kinda crazy fast -- we definitely want to throttle/batch log calls, even if we write to the response stream more frequently
@@ -231,6 +236,11 @@ export const createOpenAIChatModel = (
           if (chunk.usage) {
             inTokensUsed = chunk.usage.prompt_tokens || 0;
             outTokensUsed = chunk.usage.completion_tokens || 0;
+
+            cachedInTokensUsed =
+              // @ts-ignore gotta upgrade the library i guess
+              chunk.usage.prompt_tokens_details?.cached_tokens || 0;
+            inTokensUsed -= cachedInTokensUsed;
           }
 
           const partial = chunk.choices[0]?.delta?.content;
@@ -260,9 +270,14 @@ export const createOpenAIChatModel = (
 
       let finalCost;
       if (inTokensUsed === 0 && outTokensUsed === 0) {
-        // just in case usage doesn't show up for some reason
+        // THIS SHOULD NOT HAPPEN --
+        // just in case usage doesn't show up for some reason. want to make sure it's not 'free'
         const outputTokenCount = await countTextOutTokens(output);
-        finalCost = getChatCompletionCost(inputTokenCount, outputTokenCount);
+        finalCost = getChatCompletionCost(
+          inputTokenCount,
+          unit(0, 'intokens'),
+          outputTokenCount,
+        );
 
         await saveFinalCostCalculation(runId, finalCost, {
           inputTokenCount,
@@ -271,6 +286,7 @@ export const createOpenAIChatModel = (
       } else {
         finalCost = getChatCompletionCost(
           unit(inTokensUsed, 'intokens'),
+          unit(cachedInTokensUsed, 'intokens'),
           unit(outTokensUsed, 'outtokens'),
         );
 
@@ -304,6 +320,7 @@ export const createOpenAIChatModel = (
 
       const preliminaryCost = getChatCompletionCost(
         inputTokenCount,
+        unit(0, 'intokens'), // assume all tokens are uncached
         outputTokenLengthEstimate,
       );
 
@@ -393,12 +410,18 @@ export const createOpenAIChatModel = (
 
       console.log(JSON.stringify(result, null, 2));
 
-      const trueInputTokens = result.usage?.prompt_tokens;
+      let trueInputTokens = result.usage?.prompt_tokens;
       const trueOutputTokens = result.usage?.completion_tokens;
 
       if (trueInputTokens != null && trueOutputTokens != null) {
+        const trueCachedInputTokens =
+          // @ts-ignore
+          result.usage?.prompt_tokens_details?.cached_tokens || 0;
+        trueInputTokens -= trueCachedInputTokens;
+
         const finalCost = getChatCompletionCost(
           unit(trueInputTokens, 'intokens'),
+          unit(trueCachedInputTokens, 'intokens'),
           unit(trueOutputTokens, 'outtokens'),
         );
 

@@ -11,5 +11,6 @@ export const { streamResponse } = createOpenAIChatModel({
   },
   imageTokenCalculator: calculateOpenAIImageTokensMini,
   pricePerIntoken: unit(0.15, 'dollars / megaintoken'),
+  pricePerCachedIntoken: unit(0.075, 'dollars / megaintoken'),
   pricePerOuttoken: unit(0.6, 'dollars / megaouttoken'),
 });
