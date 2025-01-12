@@ -71,6 +71,7 @@ export function evaluateOverridesForModelInputs<T extends ModelInputs>(
       case 'plain-text-with-parameters':
       case 'select':
       case 'simple-schema':
+        // nothing happens if you override these. they can't be made into variables
         // @ts-ignore
         clonedModelInputValues[key] = modelInputValues[key];
         break;

@@ -7,6 +7,7 @@ import { streamResponse as streamResponse_fofr_sdxlEmoji } from './fofr_sdxlEmoj
 import { streamResponse as streamResponse_metaLlama31405bInstruct } from './meta-llama-3-1-405b-instruct.js';
 import { streamResponse as streamResponse_metaLlama370bBase } from './meta-llama-3-70b-base.js';
 import { streamResponse as streamResponse_metaLlama370bInstruct } from './meta-llama-3-70b-instruct.js';
+import { streamResponse as streamResponse_pharmapsychoticClipInterrogator } from './pharmapsychotic_clip-interrogator.js';
 import { streamResponse as streamResponse_sdxl } from './sdxl.js';
 import { streamResponse as streamResponse_stableDiffusion } from './stable-diffusion.js';
 import { streamResponse as streamResponse_yorickvp_llava13b } from './yorickvp_llava-13b.js';
@@ -57,6 +58,10 @@ export default function replicateIndex(modelName: string): ModelExports {
     case 'black-forest-labs_flux-1-schnell':
       return {
         streamResponse: streamResponse_blackForestLabs_Flux1Schnell,
+      };
+    case 'pharmapsychotic_clip-interrogator':
+      return {
+        streamResponse: streamResponse_pharmapsychoticClipInterrogator,
       };
     default:
       throw new Error(`Unknown model ${modelName}`);
