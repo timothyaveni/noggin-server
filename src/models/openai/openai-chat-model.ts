@@ -61,6 +61,7 @@ type OpenAIModelName =
   | 'gpt-4o-2024-05-13'
   | 'gpt-4o-mini-2024-07-18'
   | 'gpt-4o-2024-08-06'
+  | 'o1-2024-12-17'
   | 'o3-mini-2025-01-31';
 
 type OpenAIChatModelDescription = {
@@ -185,7 +186,7 @@ export const createOpenAIChatModel = (
       });
 
       const outputTokenLengthEstimate = unit(
-        modelParams.evaluated['maximum-completion-length'] || 4095,
+        modelParams.evaluated['maximum-completion-length'] || 100000,
         'outtokens',
       );
 

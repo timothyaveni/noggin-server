@@ -7,6 +7,7 @@ import { streamResponse as streamResponse_gpt4VisionPreview } from './gpt-4-visi
 import { streamResponse as streamResponse_gpt4o20240513 } from './gpt-4o-2024-05-13.js';
 import { streamResponse as streamResponse_gpt4o20240806 } from './gpt-4o-2024-08-06.js';
 import { streamResponse as streamResponse_gpt4oMini20240718 } from './gpt-4o-mini-2024-07-18.js';
+import { streamResponse as streamResponse_o120241217 } from './o1-2024-12-17.js';
 import { streamResponse as streamResponse_o3Mini20250131 } from './o3-mini-2025-01-31.js';
 
 export default function openaiIndex(modelName: string): ModelExports {
@@ -42,6 +43,10 @@ export default function openaiIndex(modelName: string): ModelExports {
     case 'gpt-4o-2024-08-06':
       return {
         streamResponse: streamResponse_gpt4o20240806,
+      };
+    case 'o1-2024-12-17':
+      return {
+        streamResponse: streamResponse_o120241217,
       };
     case 'o3-mini-2025-01-31':
       return {
