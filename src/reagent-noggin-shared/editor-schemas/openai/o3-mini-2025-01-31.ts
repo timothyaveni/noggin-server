@@ -56,7 +56,6 @@ const schema: EditorSchema = {
         type: 'string',
       },
     },
-    // todo: ['stop-sequences'],
   },
 
   modelInputComponents: ['chat-prompt'],
