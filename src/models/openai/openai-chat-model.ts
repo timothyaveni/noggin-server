@@ -325,7 +325,7 @@ export const createOpenAIChatModel = (
       });
 
       const outputTokenLengthEstimate = unit(
-        modelParams.evaluated['maximum-completion-length'] || 4095,
+        modelParams.evaluated['maximum-completion-length'] || 100000,
         'outtokens',
       );
 
