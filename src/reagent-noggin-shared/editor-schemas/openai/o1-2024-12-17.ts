@@ -15,7 +15,11 @@ const schema: EditorSchema = {
       chatTextCapabilities: {
         variables: true,
         messageTypes: ['user', 'assistant', 'developer'],
-        images: false,
+        images: {
+          user: true,
+          developer: true,
+          assistant: false,
+        },
       },
       editorHeight: 'primary',
     },

@@ -47,6 +47,20 @@ export const calculateOpenAIImageTokensMini = (
   }
 };
 
+export const calculateOpenAIImageTokensO1 = (
+  chunk: ChatCompletionContentPartImage,
+) => {
+  if (chunk.image_url.detail === 'low') {
+    return unit(75, 'intokens');
+  } else {
+    console.warn(
+      'High-detail and auto-detail images not yet implemented -- assuming max token count.',
+    );
+    // looks like the most i can get it to do is 8 tiles actually, in the calculator
+    return unit(8 * 150 + 75, 'intokens');
+  }
+};
+
 export const countChatInputTokens =
   (calculateImageTokens: (chunk: ChatCompletionContentPartImage) => Unit) =>
   async ({
