@@ -77,6 +77,8 @@ export const streamResponse: StreamModelResponse = async (
       )} [/INST]`;
     } else if (turn.speaker === 'assistant') {
       prompt += `\n${flattenTextOnlyContentChunks(turn.content)}`;
+    } else if (turn.speaker === 'developer') {
+      throw new Error('Developer turns are not supported');
     } else {
       const _exhaustiveCheck: never = turn.speaker;
     }

@@ -2,6 +2,7 @@ import { DocumentVariable } from './types/DocType';
 import { EditorSchema } from './types/editorSchema';
 
 export const overridableModelInputTypes = {
+  'chat-text': false,
   'chat-text-user-images-with-parameters': false,
   'chat-text-with-parameters': false,
   'plain-text-with-parameters': false,
@@ -19,6 +20,7 @@ export const overridableModelInputTypes = {
 export const overridableModelInputTypeMap: {
   [key: string]: 'integer' | 'number' | 'image' | 'boolean' | null;
 } = {
+  'chat-text': null,
   'chat-text-user-images-with-parameters': null,
   'chat-text-with-parameters': null,
   'plain-text-with-parameters': null,

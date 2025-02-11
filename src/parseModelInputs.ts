@@ -19,6 +19,7 @@ export const parseModelInputs = (
   for (const inputKey of Object.keys(editorSchema.allEditorComponents)) {
     const input = editorSchema.allEditorComponents[inputKey];
     switch (input.type) {
+      case 'chat-text':
       case 'chat-text-user-images-with-parameters':
       case 'chat-text-with-parameters':
         parsedInputs[inputKey] = slateChatToStandardChat(

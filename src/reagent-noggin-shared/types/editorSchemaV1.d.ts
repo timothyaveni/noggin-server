@@ -64,7 +64,7 @@ type TextOrVariable =
 export type ModelInput_PlainTextWithVariables_Value = TextOrVariable[];
 
 export type ChatTurnWithVariables = {
-  speaker: 'user' | 'assistant';
+  speaker: 'user' | 'assistant' | 'developer';
   text: ModelInput_PlainTextWithVariables_Value;
 };
 export type ModelInput_StandardChatWithVariables_Value =
@@ -83,6 +83,24 @@ interface ModelInput_ChatTextUserImagesWithVariables extends ModelInputBase {
 
 interface ModelInput_ChatTextWithVariables extends ModelInputBase {
   type: 'chat-text-with-parameters';
+  editorHeight?: EditorHeight;
+}
+
+interface ModelInput_ChatTextGeneral extends ModelInputBase {
+  type: 'chat-text';
+  chatTextCapabilities: {
+    variables:
+      | boolean
+      | {
+          [messageType: string]: boolean;
+        };
+    messageTypes: Array<'user' | 'assistant' | 'developer'>;
+    images:
+      | boolean
+      | {
+          [messageType: string]: boolean;
+        };
+  };
   editorHeight?: EditorHeight;
 }
 
@@ -150,6 +168,7 @@ export type ModelInput_Value =
 
 export type ModelInput =
   | ModelInput_PlainTextWithVariables
+  | ModelInput_ChatTextGeneral
   | ModelInput_ChatTextUserImagesWithVariables
   | ModelInput_ChatTextWithVariables
   | ModelInput_Image

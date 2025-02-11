@@ -22,6 +22,7 @@ import {
   ModelInput_Integer_Value,
   ModelInput_Number_Value,
   ModelInput_PlainTextWithVariables_Value,
+  ModelInput_Select_Value,
   ModelInput_SimpleSchema_Value,
   ModelInput_StandardChatWithVariables_Value,
 } from '../../reagent-noggin-shared/types/editorSchemaV1.js';
@@ -39,14 +40,15 @@ import { createOpenAIMultimodalContent } from './createOpenAIMultimodalContent.j
 
 // there might be some type magic we can do here to grab these from the actual type in the editor schema file? now that we're consolidating models it's a lil awkward
 type UnevaluatedModelParams = {
-  'system-prompt': ModelInput_PlainTextWithVariables_Value;
+  'system-prompt'?: ModelInput_PlainTextWithVariables_Value;
   'chat-prompt': ModelInput_StandardChatWithVariables_Value;
-  temperature: ModelInput_Number_Value;
-  'top-p': ModelInput_Number_Value;
-  'frequency-penalty': ModelInput_Number_Value;
-  'presence-penalty': ModelInput_Number_Value;
-  'maximum-completion-length': ModelInput_Integer_Value;
-  'output-structure': ModelInput_SimpleSchema_Value;
+  temperature?: ModelInput_Number_Value;
+  'top-p'?: ModelInput_Number_Value;
+  'frequency-penalty'?: ModelInput_Number_Value;
+  'presence-penalty'?: ModelInput_Number_Value;
+  'maximum-completion-length'?: ModelInput_Integer_Value;
+  'reasoning-effort'?: ModelInput_Select_Value;
+  'output-structure'?: ModelInput_SimpleSchema_Value;
 };
 
 // this isn't strictly necessary but better safe. type error will warn you quick anyway
@@ -58,7 +60,8 @@ type OpenAIModelName =
   | 'gpt-4-turbo-2024-04-09'
   | 'gpt-4o-2024-05-13'
   | 'gpt-4o-mini-2024-07-18'
-  | 'gpt-4o-2024-08-06';
+  | 'gpt-4o-2024-08-06'
+  | 'o3-mini-2025-01-31';
 
 type OpenAIChatModelDescription = {
   modelName: OpenAIModelName;
@@ -66,6 +69,7 @@ type OpenAIChatModelDescription = {
   capabilities: {
     supportsJsonMode: boolean;
     supportsFunctionCalling: boolean;
+    supportsStructuredOutput?: boolean;
     supportsImageInputs: boolean;
   };
 
@@ -121,7 +125,7 @@ export const createOpenAIChatModel = (
 
     const messages: OpenAIChat = [];
 
-    if (modelParams.evaluated['system-prompt'].length) {
+    if (modelParams.evaluated['system-prompt']?.length) {
       messages.push({
         role: 'system',
         content: modelParams.evaluated['system-prompt'],
@@ -297,8 +301,14 @@ export const createOpenAIChatModel = (
       }
 
       succeedRun(runId, 'text', output);
-    } else if (chosenOutputFormat.type === 'structured-data') {
-      if (!modelDescription.capabilities.supportsFunctionCalling) {
+    } else if (
+      chosenOutputFormat.type === 'structured-data' &&
+      modelParams.evaluated['output-structure']
+    ) {
+      if (
+        !modelDescription.capabilities.supportsFunctionCalling &&
+        !modelDescription.capabilities.supportsStructuredOutput
+      ) {
         // mostly this is handled in the editorSchema, which will prevent this from happening in the first place
         failRun(runId, 'This model does not support structured data output.');
         return;
@@ -380,10 +390,18 @@ export const createOpenAIChatModel = (
         ),
       );
 
-      let result;
-      try {
-        result = await openai.chat.completions.create({
-          ...apiParams,
+      // okay we are gonna do this but not today i have a job goddammit
+      const structuredOutputRequestData: any =
+        //  modelDescription.capabilities
+        //   .supportsStructuredOutput
+        //   ? {
+        //       response_format: {
+        //         type: 'json_schema',
+        //         json_schema: gptSchema,
+        //       },
+        //     }
+        //   :
+        {
           tools: [
             {
               type: 'function',
@@ -399,6 +417,13 @@ export const createOpenAIChatModel = (
               name: 'respond',
             },
           },
+        };
+
+      let result;
+      try {
+        result = await openai.chat.completions.create({
+          ...apiParams,
+          ...structuredOutputRequestData,
         });
       } catch (e: any) {
         const message = e.message
