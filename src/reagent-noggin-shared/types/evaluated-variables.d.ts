@@ -26,7 +26,7 @@ export type EvaluatedImageURLChunk = {
 export type EvaluatedContentChunk = EvaluatedTextChunk | EvaluatedImageURLChunk;
 
 type EvaluatedChatTurn = {
-  speaker: 'user' | 'assistant';
+  speaker: 'user' | 'assistant' | 'developer';
   content: EvaluatedContentChunk[];
 };
 

@@ -21,6 +21,7 @@ export const importDocFromObject = (
   for (const key of Object.keys(obj.modelInputs)) {
     const inputType = editorSchema.allEditorComponents[key].type;
     switch (inputType) {
+      case 'chat-text':
       case 'chat-text-user-images-with-parameters':
       case 'chat-text-with-parameters':
       case 'plain-text-with-parameters':

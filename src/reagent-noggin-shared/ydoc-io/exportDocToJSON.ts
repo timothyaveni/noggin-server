@@ -12,6 +12,7 @@ export const exportDocToObject = (
   for (const key of yDocModelInputsMap.keys()) {
     const inputType = editorSchema.allEditorComponents[key].type;
     switch (inputType) {
+      case 'chat-text':
       case 'chat-text-user-images-with-parameters':
       case 'chat-text-with-parameters':
       case 'plain-text-with-parameters':

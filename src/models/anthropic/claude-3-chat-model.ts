@@ -89,10 +89,16 @@ export const createClaude3ChatModel = (
     });
 
     const messages = await Promise.all(
-      modelParams.evaluated['chat-prompt'].map(async (m) => ({
-        role: m.speaker,
-        content: await createAnthropicMultimodalContent(m.content),
-      })),
+      modelParams.evaluated['chat-prompt'].map(async (m) => {
+        if (m.speaker !== 'user' && m.speaker !== 'assistant') {
+          throw new Error('Unsupported speaker');
+        }
+
+        return {
+          role: m.speaker,
+          content: await createAnthropicMultimodalContent(m.content),
+        };
+      }),
     );
 
     const apiParams = {

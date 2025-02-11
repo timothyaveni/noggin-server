@@ -55,7 +55,7 @@ export type IOVisualizationElement =
   | IOVisualizationElement_ResponseVoid;
 
 export type IOVisualizationChatTextTurn = {
-  speaker: 'user' | 'assistant';
+  speaker: 'user' | 'assistant' | 'developer';
   content: IOVisualizationElement[];
 };
 

@@ -46,6 +46,7 @@ export const evaluateVariablesInModelInputs = (
     const input = editorSchema.allEditorComponents[inputKey];
     let thisModelInputValue: ModelInput_Value;
     switch (input.type) {
+      case 'chat-text':
       case 'chat-text-user-images-with-parameters':
       case 'chat-text-with-parameters':
         thisModelInputValue = partialEvaluatedModelInputValues[

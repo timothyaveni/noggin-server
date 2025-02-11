@@ -66,6 +66,7 @@ export function evaluateOverridesForModelInputs<T extends ModelInputs>(
           clonedModelInputValues[key] = modelInputValues[key];
         }
         break;
+      case 'chat-text':
       case 'chat-text-user-images-with-parameters':
       case 'chat-text-with-parameters':
       case 'plain-text-with-parameters':

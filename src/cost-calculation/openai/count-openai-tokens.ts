@@ -69,6 +69,7 @@ export const countChatInputTokens =
       if (
         message.role !== 'user' &&
         message.role !== 'assistant' &&
+        message.role !== 'developer' &&
         message.role !== 'system'
       ) {
         throw new Error('Tool calls in messages: not yet implemented');
@@ -87,6 +88,11 @@ export const countChatInputTokens =
               additionalTokens,
               calculateImageTokens(chunk),
             );
+          } else if (chunk.type === 'input_audio') {
+            throw new Error('Input audio: not yet implemented');
+          } else if (chunk.type === 'refusal') {
+            // output only
+            throw new Error('Refusal is not allowed in input');
           } else {
             const _exhaustiveCheck: never = chunk;
           }
@@ -95,6 +101,8 @@ export const countChatInputTokens =
 
       adaptedChat.push({
         ...message,
+        // hacking isWithinTokenLimit here
+        role: message.role === 'developer' ? 'user' : message.role,
         content: stringContent,
       });
     }
