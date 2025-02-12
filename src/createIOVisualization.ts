@@ -11,7 +11,7 @@ import {
   ModelInput_StandardChatWithVariables_Value,
 } from './reagent-noggin-shared/types/editorSchemaV1';
 
-const createHypertextFromTextWithVariables = (
+export const createHypertextFromTextWithVariables = (
   hypertext: ModelInput_PlainTextWithVariables_Value,
 ): IOVisualizationElement_HyperText => {
   return {

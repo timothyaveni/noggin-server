@@ -4,7 +4,10 @@ import {
   saveFinalCostCalculation,
   savePreliminaryCostEstimate,
 } from '../../cost-calculation/save-cost-calculations.js';
-import { createIOVisualizationForChatTextModel } from '../../createIOVisualization.js';
+import {
+  createHypertextFromTextWithVariables,
+  createIOVisualizationForChatTextModel,
+} from '../../createIOVisualization.js';
 import { unit } from '../../reagent-noggin-shared/cost-calculation/units.js';
 import {
   ModelInput_Image_Value,
@@ -12,6 +15,7 @@ import {
   ModelInput_Number_Value,
   ModelInput_PlainTextWithVariables_Value,
   ModelInput_Select_Value,
+  ModelInput_StandardChatWithVariables_Value,
 } from '../../reagent-noggin-shared/types/editorSchemaV1.js';
 import { ModelParamsForStreamResponse } from '../../reagent-noggin-shared/types/evaluated-variables.js';
 import {
@@ -24,6 +28,10 @@ import {
 import { StreamModelResponse } from '../index.js';
 import axios from 'axios';
 import { createAssetInBucket } from '../../object-storage/createAssetInBucket.js';
+import {
+  IOVisualizationChatTextTurn,
+  IOVisualizationRender,
+} from '../../reagent-noggin-shared/io-visualization-types/IOVisualizationRender.js';
 
 type UnevaluatedModelParams = {
   image: ModelInput_Image_Value;
@@ -49,7 +57,7 @@ export const streamResponse: StreamModelResponse = async (
   },
   remainingBudget,
 ) => {
-  const ioVisualizationRender = createIOVisualizationForChatTextModel([
+  const chatPrompt: ModelInput_StandardChatWithVariables_Value = [
     {
       speaker: 'user',
       text: [
@@ -75,7 +83,35 @@ export const streamResponse: StreamModelResponse = async (
         ...modelParams.partialEvaluated['prompt'],
       ],
     },
-  ]);
+  ];
+
+  const ioVisualizationRender: IOVisualizationRender = {
+    version: '1',
+    payload: {
+      primaryView: [
+        {
+          type: 'chat text',
+          turns: [
+            ...chatPrompt.map(
+              (turn): IOVisualizationChatTextTurn => ({
+                speaker: turn.speaker,
+                content: [createHypertextFromTextWithVariables(turn.text)],
+              }),
+            ),
+          ],
+        },
+        {
+          type: 'raw element',
+          content: [
+            {
+              type: 'response void',
+            },
+          ],
+        },
+      ],
+      secondaryView: [],
+    },
+  };
 
   await setIOVisualizationRenderForRunStream(runId, ioVisualizationRender);
 
