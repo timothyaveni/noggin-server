@@ -8,6 +8,7 @@ import { streamResponse as streamResponse_metaLlama31405bInstruct } from './meta
 import { streamResponse as streamResponse_metaLlama370bBase } from './meta-llama-3-70b-base.js';
 import { streamResponse as streamResponse_metaLlama370bInstruct } from './meta-llama-3-70b-instruct.js';
 import { streamResponse as streamResponse_pharmapsychoticClipInterrogator } from './pharmapsychotic_clip-interrogator.js';
+import { streamResponse as streamResponse_rossjillianControlnet } from './rossjillian_controlnet.js';
 import { streamResponse as streamResponse_sdxl } from './sdxl.js';
 import { streamResponse as streamResponse_stableDiffusion } from './stable-diffusion.js';
 import { streamResponse as streamResponse_yorickvp_llava13b } from './yorickvp_llava-13b.js';
@@ -62,6 +63,10 @@ export default function replicateIndex(modelName: string): ModelExports {
     case 'pharmapsychotic_clip-interrogator':
       return {
         streamResponse: streamResponse_pharmapsychoticClipInterrogator,
+      };
+    case 'rossjillian_controlnet':
+      return {
+        streamResponse: streamResponse_rossjillianControlnet,
       };
     default:
       throw new Error(`Unknown model ${modelName}`);

@@ -1,7 +1,4 @@
-import {
-  calculateOpenAIImageTokensO1,
-  calculateOpenAIImageTokensStandard,
-} from '../../cost-calculation/openai/count-openai-tokens.js';
+import { calculateOpenAIImageTokensO1 } from '../../cost-calculation/openai/count-openai-tokens.js';
 import { unit } from '../../reagent-noggin-shared/cost-calculation/units.js';
 import { createOpenAIChatModel } from './openai-chat-model.js';
 
