@@ -38,6 +38,7 @@
     "express": "^4.18.2",
     "gm": "^1.25.0",
     "gpt-tokenizer": "^2.1.2",
+    "groq-sdk": "^0.17.0",
     "identicon.js": "^2.3.3",
     "mathjs": "^12.3.0",
     "minio": "^7.1.3",

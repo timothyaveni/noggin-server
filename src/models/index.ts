@@ -1,6 +1,7 @@
 import { OutputFormat } from '../reagent-noggin-shared/types/editorSchema.js';
 import { ModelParamsForStreamResponse } from '../reagent-noggin-shared/types/evaluated-variables.js';
 import anthropicIndex from './anthropic/index.js';
+import groqIndex from './groq/index.js';
 import openaiIndex from './openai/index.js';
 import replicateIndex from './replicate/index.js';
 import togetherIndex from './together/index.js';
@@ -33,6 +34,8 @@ export default function index(
   switch (providerName) {
     case 'openai':
       return openaiIndex;
+    case 'groq':
+      return groqIndex;
     case 'replicate':
       return replicateIndex;
     case 'anthropic':

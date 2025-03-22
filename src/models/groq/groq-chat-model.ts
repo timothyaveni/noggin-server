@@ -1,6 +1,6 @@
 import { Unit } from 'mathjs';
 
-import Together from 'together-ai';
+import Groq from 'groq-sdk';
 
 import {
   ChatCompletionAssistantMessageParam,
@@ -40,22 +40,14 @@ type UnevaluatedModelParams = {
   'chat-prompt': ModelInput_StandardChatWithVariables_Value;
   temperature?: ModelInput_Number_Value;
   'top-p'?: ModelInput_Number_Value;
-  'top-k'?: ModelInput_Integer_Value;
-  'min-p'?: ModelInput_Number_Value;
-  'repetition-penalty'?: ModelInput_Number_Value;
-  'frequency-penalty'?: ModelInput_Number_Value;
-  'presence-penalty'?: ModelInput_Number_Value;
   'maximum-completion-length'?: ModelInput_Integer_Value;
-  'output-structure'?: ModelInput_SimpleSchema_Value;
 };
 
 // this isn't strictly necessary but better safe. type error will warn you quick anyway
-type TogetherChatModelName =
-  | 'deepseek-ai/DeepSeek-R1'
-  | 'deepseek-ai/DeepSeek-R1-Distill-Qwen-14B';
+type GroqChatModelName = 'deepseek-r1-distill-llama-70b-specdec';
 
-type TogetherChatModelDescription = {
-  modelName: TogetherChatModelName;
+type GroqChatModelDescription = {
+  modelName: GroqChatModelName;
 
   capabilities: {};
 
@@ -63,14 +55,14 @@ type TogetherChatModelDescription = {
   pricePerOuttoken: Unit;
 };
 
-type TogetherChat = (
+type GroqChat = (
   | ChatCompletionSystemMessageParam
   | ChatCompletionUserMessageParam
   | ChatCompletionAssistantMessageParam
 )[]; // sure
 
-export const createTogetherChatModel = (
-  modelDescription: TogetherChatModelDescription,
+export const createGroqChatModel = (
+  modelDescription: GroqChatModelDescription,
 ) => {
   const getChatCompletionCost = getGenericCompletionCost(
     modelDescription.pricePerIntoken,
@@ -100,11 +92,11 @@ export const createTogetherChatModel = (
       'Keep-Alive': 'timeout=90, max=1000',
     });
 
-    const together = new Together({
+    const groq = new Groq({
       apiKey: providerCredentials.credentials.apiKey,
     });
 
-    const messages: TogetherChat = [];
+    const messages: GroqChat = [];
 
     if (modelParams.evaluated['system-prompt']?.length) {
       messages.push({
@@ -124,14 +116,9 @@ export const createTogetherChatModel = (
     const apiParams = {
       messages,
       model: modelDescription.modelName,
-      frequency_penalty: modelParams.evaluated['frequency-penalty'],
-      presence_penalty: modelParams.evaluated['presence-penalty'],
-      repetition_penalty: modelParams.evaluated['repetition-penalty'],
       max_tokens: modelParams.evaluated['maximum-completion-length'],
       temperature: modelParams.evaluated['temperature'],
       top_p: modelParams.evaluated['top-p'],
-      top_k: modelParams.evaluated['top-k'],
-      min_p: modelParams.evaluated['min-p'],
     };
 
     // this is kind of nice in dev but silly in prod. need better log view maybe
@@ -151,7 +138,7 @@ export const createTogetherChatModel = (
       let stream;
       try {
         // @ts-ignore sigh it's not quite compatible
-        stream = await together.chat.completions.create({
+        stream = await groq.chat.completions.create({
           ...apiParams,
           stream: true,
         });
@@ -221,15 +208,16 @@ export const createTogetherChatModel = (
             },
           });
 
-          if (chunk.usage) {
-            inTokensUsed = chunk.usage.prompt_tokens || 0;
-            outTokensUsed = chunk.usage.completion_tokens || 0;
+          // sigh todo i don't think we really have usage info
+          // if (chunk.usage) {
+          //   inTokensUsed = chunk.usage.prompt_tokens || 0;
+          //   outTokensUsed = chunk.usage.completion_tokens || 0;
 
-            cachedInTokensUsed =
-              // @ts-ignore gotta upgrade the library i guess
-              chunk.usage.prompt_tokens_details?.cached_tokens || 0;
-            inTokensUsed -= cachedInTokensUsed;
-          }
+          //   cachedInTokensUsed =
+          //     // @ts-ignore gotta upgrade the library i guess
+          //     chunk.usage.prompt_tokens_details?.cached_tokens || 0;
+          //   inTokensUsed -= cachedInTokensUsed;
+          // }
 
           const partial = chunk.choices[0]?.delta?.content;
 
