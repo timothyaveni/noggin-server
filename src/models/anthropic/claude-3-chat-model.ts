@@ -4,6 +4,7 @@ import {
   unit,
 } from '../../reagent-noggin-shared/cost-calculation/units.js';
 import {
+  ModelInput_Boolean_Value,
   ModelInput_Integer_Value,
   ModelInput_Number_Value,
   ModelInput_PlainTextWithVariables_Value,
@@ -37,6 +38,8 @@ type UnevaluatedModelParams = {
   temperature: ModelInput_Number_Value;
   'top-p': ModelInput_Number_Value;
   'maximum-completion-length': ModelInput_Integer_Value;
+  'enable-thinking'?: ModelInput_Boolean_Value;
+  'thinking-budget-tokens'?: ModelInput_Integer_Value;
   // 'output-structure': ModelInput_SimpleSchema_Value;
 };
 
@@ -44,7 +47,8 @@ type Claude3ModelName =
   | 'claude-3-haiku-20240307'
   | 'claude-3-sonnet-20240229'
   | 'claude-3-opus-20240229'
-  | 'claude-3-5-sonnet-20240620';
+  | 'claude-3-5-sonnet-20240620'
+  | 'claude-3-7-sonnet-20250219';
 
 type Claude3ModelDescription = {
   modelName: Claude3ModelName;
@@ -101,13 +105,25 @@ export const createClaude3ChatModel = (
       }),
     );
 
+    const enableThinking = modelParams.evaluated['enable-thinking'] ?? false;
+
     const apiParams = {
       model: modelDescription.modelName,
       system: modelParams.evaluated['system-prompt'],
       messages: messages,
       max_tokens: modelParams.evaluated['maximum-completion-length'],
-      temperature: modelParams.evaluated['temperature'],
-      top_p: modelParams.evaluated['top-p'],
+      ...(enableThinking
+        ? {
+            thinking: {
+              type: 'enabled' as const,
+              budget_tokens:
+                modelParams.evaluated['thinking-budget-tokens'] ?? 1024,
+            },
+          }
+        : {
+            temperature: modelParams.evaluated['temperature'],
+            top_p: modelParams.evaluated['top-p'],
+          }),
     };
 
     writeLogToRunStream(runId, {
@@ -182,6 +198,8 @@ export const createClaude3ChatModel = (
     let inputTokenCountRaw = 0;
     let outputTokenCountRaw = 0;
 
+    let thinking = false;
+
     try {
       for await (const chunk of stream) {
         writeLogToRunStream(runId, {
@@ -202,15 +220,42 @@ export const createClaude3ChatModel = (
         }
 
         if (chunk.type === 'content_block_delta') {
-          if (chunk.delta.type !== 'text_delta') {
-            throw new Error('Unsupported delta type');
-          }
-          const partial = chunk.delta.text;
+          if (chunk.delta.type === 'text_delta') {
+            const nextThinking = false;
+            let partial = chunk.delta.text;
+            if (thinking !== nextThinking) {
+              thinking = nextThinking;
 
-          if (partial) {
+              // idk feels reasonable for text output
+              partial = '</think>\n\n' + partial;
+            }
             output += partial;
             writeIncrementalContentToRunStream(runId, 'text', partial, chunk);
+          } else if (chunk.delta.type === 'thinking_delta') {
+            const nextThinking = true;
+            let partial = chunk.delta.thinking;
+
+            if (thinking !== nextThinking) {
+              thinking = nextThinking;
+
+              partial = '<think>\n' + partial;
+            }
+
+            output += partial;
+            writeIncrementalContentToRunStream(runId, 'text', partial, chunk);
+          } else {
+            // i mean yeah there are a few i don't care about at the mo' --
+            // signature, citations, input json
+            // console.log(chunk);
+            // throw new Error('Unsupported delta type');
           }
+        }
+
+        if (
+          chunk.type === 'content_block_start' &&
+          chunk.content_block.type === 'redacted_thinking'
+        ) {
+          // do nothing
         }
       }
     } catch (e: any) {

@@ -1,7 +1,11 @@
+// import {
+//   ImageBlockParam,
+//   TextBlockParam,
+// } from '@anthropic-ai/sdk/resources/messages.js';
 import {
   ImageBlockParam,
   TextBlockParam,
-} from '@anthropic-ai/sdk/resources/messages.js';
+} from '@anthropic-ai/sdk/resources/index.js';
 import { fetchBase64Asset } from '../../object-storage/createAssetInBucket.js';
 import { EvaluatedContentChunk } from '../../reagent-noggin-shared/types/evaluated-variables';
 
