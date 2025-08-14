@@ -37,6 +37,7 @@ import {
 } from '../../runStreams.js';
 import { StreamModelResponse } from '../index.js';
 import { createOpenAIMultimodalContent } from './createOpenAIMultimodalContent.js';
+import { AzureOpenAI } from 'openai';
 
 // there might be some type magic we can do here to grab these from the actual type in the editor schema file? now that we're consolidating models it's a lil awkward
 type UnevaluatedModelParams = {
@@ -83,6 +84,61 @@ type OpenAIChatModelDescription = {
 
 type OpenAIChat = ChatCompletionMessageParam[];
 
+// 集中定义：Azure API 版本（未来升级只改此处）
+const AZURE_API_VERSION = '2024-12-01-preview';
+
+// 预留覆盖表（内部模型名 -> Azure 部署名）。默认留空，未来可扩展。
+const azureDeploymentOverrides: Partial<Record<OpenAIModelName, string>> = {
+  // e.g. 'gpt-4o-2024-08-06': 'my-deployment-name'
+};
+
+// 将内部模型名映射为 Azure 部署名：优先覆盖表，否则移除尾部日期后缀 -YYYY-MM-DD
+function toAzureDeployment(internalModelName: string): string {
+  const override = (azureDeploymentOverrides as any)[internalModelName];
+  if (override) return override;
+
+  // 去掉日期后缀（如 -2024-08-06）
+  const stripped = internalModelName.replace(/-\d{4}-\d{2}-\d{2}$/, '');
+  return stripped;
+}
+
+// 判定是否 Azure 域名
+function isAzureEndpoint(url?: string | null): boolean {
+  if (!url) return false;
+  try {
+    const u = new URL(url);
+    return (
+      /\.openai\.azure\.com$/i.test(u.hostname) ||
+      /\.cognitiveservices\.azure\.com$/i.test(u.hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
+// 规范化错误提示（不泄露 key）
+function formatAzureError(e: any): string {
+  const status =
+    e?.status ?? e?.statusCode ?? e?.response?.status ?? e?.response?.statusCode;
+  const retryAfter =
+    e?.response?.headers?.['retry-after'] ??
+    e?.response?.headers?.['Retry-After'];
+  if (status === 401) {
+    return 'Error from Azure OpenAI API: 401 Unauthorized (check API key or resource permissions).';
+  }
+  if (status === 404) {
+    return 'Error from Azure OpenAI API: 404 Not Found (check endpoint or deployment mapping for the selected model).';
+  }
+  if (status === 429) {
+    return `Error from Azure OpenAI API: 429 Too Many Requests${
+      retryAfter ? ` (Retry-After: ${retryAfter}s)` : ''
+    }.`;
+  }
+  return e?.message
+    ? 'Error from Azure OpenAI API: ' + e.message
+    : 'Error from Azure OpenAI API';
+}
+
 export const createOpenAIChatModel = (
   modelDescription: OpenAIChatModelDescription,
 ) => {
@@ -103,7 +159,8 @@ export const createOpenAIChatModel = (
     runId: number,
     providerCredentials: {
       credentialsVersion: 1;
-      credentials: { apiKey: string };
+      // 增加 base_url（可选）。无则走原生 OpenAI。
+      credentials: { apiKey: string; base_url?: string };
     },
     remainingBudget,
   ) => {
@@ -120,9 +177,25 @@ export const createOpenAIChatModel = (
       'Keep-Alive': 'timeout=90, max=1000',
     });
 
-    const openai = new OpenAI({
-      apiKey: providerCredentials.credentials.apiKey,
-    });
+    // 判定是否 Azure
+    const baseUrl = providerCredentials.credentials.base_url;
+    const useAzure = isAzureEndpoint(baseUrl);
+
+    // 按需创建客户端
+    const openai = useAzure
+      ? null
+      : new OpenAI({
+          apiKey: providerCredentials.credentials.apiKey,
+        });
+
+    const azure =
+      useAzure && baseUrl
+        ? new AzureOpenAI({
+            apiKey: providerCredentials.credentials.apiKey,
+            endpoint: baseUrl,
+            apiVersion: AZURE_API_VERSION,
+          })
+        : null;
 
     const messages: OpenAIChat = [];
 
@@ -153,6 +226,28 @@ export const createOpenAIChatModel = (
     // this is kind of nice in dev but silly in prod. need better log view maybe
     // console.log(JSON.stringify(apiParams, null, 2));
 
+    // Azure 部署名推导
+    const azureDeployment = useAzure
+      ? (azureDeploymentOverrides[
+          modelDescription.modelName
+        ] as string) ?? toAzureDeployment(modelDescription.modelName)
+      : null;
+
+    // 记录 Azure 端点信息（不含 key）
+    if (useAzure) {
+      writeLogToRunStream(runId, {
+        level: 'debug',
+        stage: 'run_model',
+        message: {
+          type: 'azure_endpoint',
+          text: 'Azure OpenAI endpoint and deployment',
+          endpoint: baseUrl,
+          deployment: azureDeployment,
+          apiVersion: AZURE_API_VERSION,
+        },
+      });
+    }
+
     writeLogToRunStream(runId, {
       level: 'debug',
       stage: 'run_model',
@@ -166,15 +261,27 @@ export const createOpenAIChatModel = (
     if (chosenOutputFormat.type === 'chat-text') {
       let stream;
       try {
-        stream = await openai.chat.completions.create({
-          ...apiParams,
-          stream: true,
-          stream_options: {
-            include_usage: true,
-          },
-        });
+        if (useAzure) {
+          // Azure：使用 deployment 名称；不传 stream_options.include_usage 以兼容 Azure
+          stream = await azure!.chat.completions.create({
+            ...apiParams,
+            model: azureDeployment!, // Azure 实际使用 deployment 名
+            stream: true,
+          });
+        } else {
+          // 原生 OpenAI：保持现状
+          stream = await openai!.chat.completions.create({
+            ...apiParams,
+            stream: true,
+            stream_options: {
+              include_usage: true,
+            },
+          });
+        }
       } catch (e: any) {
-        const message = e.message
+        const message = useAzure
+          ? formatAzureError(e)
+          : e.message
           ? 'Error from OpenAI API: ' + e.message
           : 'Error from OpenAI API';
         failRun(runId, message);
@@ -190,7 +297,6 @@ export const createOpenAIChatModel = (
         'outtokens',
       );
 
-      // TODO probably inline this
       const preliminaryCost = getChatCompletionCost(
         inputTokenCount,
         unit(0, 'intokens'), // assume all tokens are uncached
@@ -227,7 +333,7 @@ export const createOpenAIChatModel = (
 
       // TODO: some of these models are kinda crazy fast -- we definitely want to throttle/batch log calls, even if we write to the response stream more frequently
       try {
-        for await (const chunk of stream) {
+        for await (const chunk of stream as any) {
           writeLogToRunStream(runId, {
             level: 'debug',
             stage: 'run_model',
@@ -238,7 +344,8 @@ export const createOpenAIChatModel = (
             },
           });
 
-          if (chunk.usage) {
+          // Azure 流式可能无 usage；现有回退逻辑会处理
+          if (!useAzure && chunk.usage) {
             inTokensUsed = chunk.usage.prompt_tokens || 0;
             outTokensUsed = chunk.usage.completion_tokens || 0;
 
@@ -248,7 +355,7 @@ export const createOpenAIChatModel = (
             inTokensUsed -= cachedInTokensUsed;
           }
 
-          const partial = chunk.choices[0]?.delta?.content;
+          const partial = chunk.choices?.[0]?.delta?.content;
 
           if (partial) {
             output += partial;
@@ -256,7 +363,9 @@ export const createOpenAIChatModel = (
           }
         }
       } catch (e: any) {
-        const message = e.message
+        const message = useAzure
+          ? formatAzureError(e)
+          : e.message
           ? 'Error from OpenAI API: ' + e.message
           : 'Error from OpenAI API';
         failRun(runId, message);
@@ -331,7 +440,7 @@ export const createOpenAIChatModel = (
 
       const preliminaryCost = getChatCompletionCost(
         inputTokenCount,
-        unit(0, 'intokens'), // assume all tokens are uncached
+        unit(0, 'intokens'),
         outputTokenLengthEstimate,
       );
 
@@ -346,7 +455,6 @@ export const createOpenAIChatModel = (
       ) {
         failRun(
           runId,
-          // TODO use a rounding function
           `The anticipated cost of this operation exceeds the noggin's remaining budget. The anticipated cost is ${preliminaryCost.toNumber(
             'credit',
           )} and the remaining budget is ${unit(
@@ -373,23 +481,6 @@ export const createOpenAIChatModel = (
         };
         needsUnwrap = true;
       }
-
-      console.log(
-        'tools',
-        JSON.stringify(
-          [
-            {
-              type: 'function',
-              function: {
-                name: 'respond',
-                parameters: gptSchema as FunctionParameters,
-              },
-            },
-          ],
-          null,
-          2,
-        ),
-      );
 
       // okay we are gonna do this but not today i have a job goddammit
       const structuredOutputRequestData: any =
@@ -422,15 +513,25 @@ export const createOpenAIChatModel = (
 
       let result;
       try {
-        result = await openai.chat.completions.create({
-          ...apiParams,
-          ...structuredOutputRequestData,
-        });
+        if (useAzure) {
+          result = await azure!.chat.completions.create({
+            ...apiParams,
+            ...structuredOutputRequestData,
+            model: azureDeployment!, // Azure 用部署名
+          });
+        } else {
+          result = await openai!.chat.completions.create({
+            ...apiParams,
+            ...structuredOutputRequestData,
+          });
+        }
       } catch (e: any) {
-        const message = e.message
+        const message = useAzure
+          ? formatAzureError(e)
+          : e.message
           ? 'Error from OpenAI API: ' + e.message
           : 'Error from OpenAI API';
-        failRun(runId, `Error from the OpenAI API: ${message}`);
+        failRun(runId, message);
         return;
       }
 
@@ -456,6 +557,7 @@ export const createOpenAIChatModel = (
           trueOutputTokens,
         });
       } else {
+        // Azure 可能不返回 usage：保持预估成本
         // just use the estimate, it's fine
       }
 
@@ -467,7 +569,7 @@ export const createOpenAIChatModel = (
         // this can actually fail! not just because of output-length truncation, i think. i've seen it just poop
         const parsed = JSON.parse(output).answer;
         if (typeof parsed === 'string') {
-          output = parsed; // otherwise it'll have quotes
+          output = parsed;
         } else {
           output = JSON.stringify(JSON.parse(output).answer) || '';
         }
