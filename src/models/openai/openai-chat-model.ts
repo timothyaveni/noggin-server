@@ -62,7 +62,10 @@ type OpenAIModelName =
   | 'gpt-4o-mini-2024-07-18'
   | 'gpt-4o-2024-08-06'
   | 'o1-2024-12-17'
-  | 'o3-mini-2025-01-31';
+  | 'o3-mini-2025-01-31'
+  | 'gpt-5'
+  | 'gpt-5-mini'
+  | 'gpt-5-nano';
 
 type OpenAIChatModelDescription = {
   modelName: OpenAIModelName;
@@ -139,13 +142,12 @@ export const createOpenAIChatModel = (
         content: createOpenAIMultimodalContent(turn.content),
       } as ChatCompletionMessageParam); // something is going weird with the TS overload here
     }
-
     const apiParams: ChatCompletionCreateParams = {
       messages,
       model: modelDescription.modelName,
       frequency_penalty: modelParams.evaluated['frequency-penalty'],
       presence_penalty: modelParams.evaluated['presence-penalty'],
-      max_tokens: modelParams.evaluated['maximum-completion-length'],
+      max_completion_tokens: modelParams.evaluated['maximum-completion-length'],
       temperature: modelParams.evaluated['temperature'],
       top_p: modelParams.evaluated['top-p'],
     };
@@ -164,23 +166,6 @@ export const createOpenAIChatModel = (
     });
 
     if (chosenOutputFormat.type === 'chat-text') {
-      let stream;
-      try {
-        stream = await openai.chat.completions.create({
-          ...apiParams,
-          stream: true,
-          stream_options: {
-            include_usage: true,
-          },
-        });
-      } catch (e: any) {
-        const message = e.message
-          ? 'Error from OpenAI API: ' + e.message
-          : 'Error from OpenAI API';
-        failRun(runId, message);
-        return;
-      }
-
       const inputTokenCount = await countChatInputTokens({
         chat: messages,
       });
@@ -217,6 +202,23 @@ export const createOpenAIChatModel = (
             'quastra',
           ).toNumber('credit')}.`,
         );
+        return;
+      }
+
+      let stream;
+      try {
+        stream = await openai.chat.completions.create({
+          ...apiParams,
+          stream: true,
+          stream_options: {
+            include_usage: true,
+          },
+        });
+      } catch (e: any) {
+        const message = e.message
+          ? 'Error from OpenAI API: ' + e.message
+          : 'Error from OpenAI API';
+        failRun(runId, message);
         return;
       }
 

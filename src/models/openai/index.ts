@@ -9,6 +9,9 @@ import { streamResponse as streamResponse_gpt4o20240806 } from './gpt-4o-2024-08
 import { streamResponse as streamResponse_gpt4oMini20240718 } from './gpt-4o-mini-2024-07-18.js';
 import { streamResponse as streamResponse_o120241217 } from './o1-2024-12-17.js';
 import { streamResponse as streamResponse_o3Mini20250131 } from './o3-mini-2025-01-31.js';
+import { streamResponse as streamResponse_gpt5 } from './gpt-5.js';
+import { streamResponse as streamResponse_gpt5Mini } from './gpt-5-mini.js';
+import { streamResponse as streamResponse_gpt5Nano } from './gpt-5-nano.js';
 
 export default function openaiIndex(modelName: string): ModelExports {
   switch (modelName) {
@@ -51,6 +54,18 @@ export default function openaiIndex(modelName: string): ModelExports {
     case 'o3-mini-2025-01-31':
       return {
         streamResponse: streamResponse_o3Mini20250131,
+      };
+    case 'gpt-5':
+      return {
+        streamResponse: streamResponse_gpt5,
+      };
+    case 'gpt-5-mini':
+      return {
+        streamResponse: streamResponse_gpt5Mini,
+      };
+    case 'gpt-5-nano':
+      return {
+        streamResponse: streamResponse_gpt5Nano,
       };
     default:
       throw new Error(`Unknown model ${modelName}`);
