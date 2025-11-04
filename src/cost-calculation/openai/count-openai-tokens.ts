@@ -104,6 +104,8 @@ export const countChatInputTokens =
             );
           } else if (chunk.type === 'input_audio') {
             throw new Error('Input audio: not yet implemented');
+          } else if (chunk.type === 'file') {
+            throw new Error('File uploads: not yet implemented');
           } else if (chunk.type === 'refusal') {
             // output only
             throw new Error('Refusal is not allowed in input');

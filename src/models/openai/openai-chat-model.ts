@@ -47,7 +47,7 @@ type UnevaluatedModelParams = {
   'frequency-penalty'?: ModelInput_Number_Value;
   'presence-penalty'?: ModelInput_Number_Value;
   'maximum-completion-length'?: ModelInput_Integer_Value;
-  'reasoning-effort'?: ModelInput_Select_Value;
+  'reasoning-effort'?: 'low' | 'medium' | 'high' | 'minimal';
   'output-structure'?: ModelInput_SimpleSchema_Value;
 };
 
@@ -142,12 +142,20 @@ export const createOpenAIChatModel = (
         content: createOpenAIMultimodalContent(turn.content),
       } as ChatCompletionMessageParam); // something is going weird with the TS overload here
     }
+
     const apiParams: ChatCompletionCreateParams = {
       messages,
       model: modelDescription.modelName,
       frequency_penalty: modelParams.evaluated['frequency-penalty'],
       presence_penalty: modelParams.evaluated['presence-penalty'],
       max_completion_tokens: modelParams.evaluated['maximum-completion-length'],
+      // @ts-expect-error 'minimal' isn't in there?
+      reasoning_effort: modelParams.evaluated['reasoning-effort'] as
+        | 'low'
+        | 'medium'
+        | 'high'
+        | 'minimal'
+        | undefined,
       temperature: modelParams.evaluated['temperature'],
       top_p: modelParams.evaluated['top-p'],
     };
